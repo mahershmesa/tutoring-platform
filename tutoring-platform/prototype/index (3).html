@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>دليلي — منصة المدرسين</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/iconfont/tabler-icons.min.css">
+<style>
+:root{
+  --bg:#F3F5F4; --surface:#FFFFFF; --ink:#12312E; --ink-soft:#547067;
+  --teal:#0F6E56; --teal-light:#E1F5EE; --teal-dark:#085041;
+  --amber:#BA7517; --amber-light:#FAEEDA; --amber-strong:#E4A93B;
+  --border:#DDE3E1; --radius:14px; --shadow:0 2px 10px rgba(18,49,46,0.08);
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{
+  font-family:'Tajawal', sans-serif; background:var(--bg); color:var(--ink);
+  min-height:100vh; padding-bottom:72px;
+}
+.screen{display:none; animation:fade .25s ease;}
+.screen.active{display:block;}
+@keyframes fade{from{opacity:0} to{opacity:1}}
+button, input, select, textarea{font-family:inherit; font-size:15px;}
+input, select, textarea{
+  width:100%; padding:12px 14px; border:1px solid var(--border); border-radius:10px;
+  background:var(--surface); color:var(--ink);
+}
+input:focus, select:focus, textarea:focus{outline:2px solid var(--teal-light); border-color:var(--teal);}
+button{cursor:pointer; border:none; border-radius:10px;}
+.btn-primary{background:var(--teal); color:#fff; padding:13px 18px; font-weight:500;}
+.btn-primary:active{background:var(--teal-dark);}
+.btn-outline{background:#fff; border:1px solid var(--border); padding:13px 18px; color:var(--ink);}
+.btn-ghost{background:transparent; color:var(--teal); padding:8px; font-weight:500;}
+.container{max-width:1080px; margin:0 auto; padding:0 16px;}
+
+/* ---------- Auth ---------- */
+#screen-auth{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;}
+.auth-card{width:100%; max-width:380px; background:var(--surface); border-radius:20px; padding:32px 24px; box-shadow:var(--shadow); text-align:center;}
+.auth-logo{width:52px; height:52px; border-radius:14px; background:var(--teal-light); color:var(--teal-dark); display:flex; align-items:center; justify-content:center; font-size:26px; margin:0 auto 14px;}
+.auth-card h1{font-size:20px; font-weight:700; margin-bottom:4px;}
+.auth-card p{color:var(--ink-soft); font-size:13px; margin-bottom:22px;}
+.tab-row{display:flex; background:var(--bg); border-radius:10px; padding:4px; margin-bottom:16px;}
+.tab-row button{flex:1; padding:9px; background:transparent; color:var(--ink-soft); font-weight:500; font-size:13px; border-radius:8px;}
+.tab-row button.active{background:#fff; color:var(--teal-dark); box-shadow:0 1px 3px rgba(0,0,0,.08);}
+.auth-field{display:none; text-align:right; margin-bottom:14px;}
+.auth-field.active{display:block;}
+.auth-actions{display:flex; flex-direction:column; gap:10px; margin-top:6px;}
+.divider{display:flex; align-items:center; gap:10px; margin:18px 0; color:var(--ink-soft); font-size:12px;}
+.divider::before, .divider::after{content:''; flex:1; height:1px; background:var(--border);}
+.role-toggle{display:flex; gap:8px; margin-top:16px;}
+.role-toggle button{flex:1; padding:9px; font-size:12px; border:1px solid var(--border); background:#fff; color:var(--ink-soft);}
+.role-toggle button.active{border-color:var(--teal); color:var(--teal-dark); background:var(--teal-light); font-weight:500;}
+
+/* ---------- Ads banner + news ---------- */
+.ads-banner{position:relative; border-radius:16px; overflow:hidden; height:150px; background:var(--surface); border:1px solid var(--border);}
+.ads-track{display:flex; direction:ltr; height:100%; transition:transform .5s ease;}
+.ads-track > div{min-width:100%; height:100%; background-size:cover; background-position:center; display:flex; align-items:flex-end; padding:14px; color:#fff; font-size:13px; font-weight:500;}
+.ads-track > div span{background:rgba(18,49,46,.55); padding:5px 12px; border-radius:8px;}
+.ads-dots{position:absolute; bottom:10px; left:50%; transform:translateX(-50%); display:flex; gap:6px;}
+.ads-dots span{width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,.55);}
+.ads-dots span.active{background:#fff;}
+.news-row{display:flex; gap:12px; overflow-x:auto; padding-bottom:6px;}
+.news-card{min-width:200px; background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; flex-shrink:0;}
+.news-card img{width:100%; height:110px; object-fit:cover; display:block;}
+.news-card p{font-size:12px; padding:10px 12px; color:var(--ink-soft);}
+
+/* ---------- Top bar ---------- */
+.topbar{position:sticky; top:0; z-index:20; background:var(--surface); border-bottom:1px solid var(--border);}
+.topbar-inner{display:flex; align-items:center; gap:12px; padding:12px 16px;}
+.brand{display:flex; align-items:center; gap:8px; font-weight:700; font-size:16px; color:var(--teal-dark); white-space:nowrap;}
+.brand i{font-size:20px;}
+.search-wrap{position:relative; flex:1; max-width:420px;}
+.search-wrap i{position:absolute; right:12px; top:50%; transform:translateY(-50%); color:var(--ink-soft); font-size:16px;}
+.search-wrap input{padding-right:36px;}
+.icon-btn{width:38px; height:38px; border-radius:50%; background:var(--bg); display:flex; align-items:center; justify-content:center; color:var(--ink); flex-shrink:0;}
+
+/* ---------- Filters ---------- */
+.chip-row{display:flex; gap:8px; padding:12px 16px; overflow-x:auto;}
+.chip{white-space:nowrap; font-size:13px; padding:7px 16px; border-radius:999px; border:1px solid var(--border); background:#fff; color:var(--ink-soft); flex-shrink:0;}
+.chip.active{background:var(--teal-light); border-color:var(--teal); color:var(--teal-dark); font-weight:500;}
+
+/* ---------- Layout: map + sidebar ---------- */
+.home-layout{display:block; padding:0 16px 16px;}
+.map-panel{position:relative; border-radius:16px; overflow:hidden; border:1px solid var(--border); height:60vh; min-height:380px; background:var(--surface);}
+.map-bg{position:absolute; inset:0; width:100%; height:100%;}
+.pin{position:absolute; width:16px; height:16px; border-radius:50%; background:var(--teal); border:3px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,.25); cursor:pointer; transform:translate(50%,-50%);}
+.pin.hidden{display:none;}
+.pin.nearest{background:var(--amber-strong);}
+.pin.me{background:#F2C230; border:3px solid #fff; box-shadow:0 0 0 2px #F2C230, 0 1px 4px rgba(0,0,0,.25);}
+.ripple-ring{position:absolute; border-radius:50%; background:var(--amber-strong); opacity:.5; animation:ripple 2.2s ease-out infinite; pointer-events:none;}
+@keyframes ripple{0%{transform:translate(-50%,-50%) scale(.5); opacity:.55;} 100%{transform:translate(-50%,-50%) scale(3.2); opacity:0;}}
+.map-badge{position:absolute; top:14px; right:14px; background:var(--amber-light); color:var(--amber); font-size:12px; padding:6px 12px; border-radius:8px; display:none; align-items:center; gap:6px;}
+.map-badge.show{display:flex;}
+.ask-fab{position:fixed; bottom:88px; left:50%; transform:translateX(-50%); background:var(--teal); color:#fff; padding:13px 22px; border-radius:999px; font-weight:500; display:flex; align-items:center; gap:8px; box-shadow:0 4px 14px rgba(15,110,86,.35); z-index:15;}
+
+.teacher-popup{position:fixed; left:0; right:0; bottom:0; background:var(--surface); border-radius:18px 18px 0 0; padding:18px; box-shadow:0 -4px 20px rgba(0,0,0,.12); transform:translateY(110%); transition:transform .25s ease; z-index:30;}
+.teacher-popup.show{transform:translateY(0);}
+.popup-head{display:flex; align-items:center; gap:12px; margin-bottom:12px;}
+.avatar{width:46px; height:46px; border-radius:50%; background:var(--teal-light); color:var(--teal-dark); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:15px; flex-shrink:0;}
+.popup-info h3{font-size:15px; font-weight:700;}
+.popup-info p{font-size:12px; color:var(--ink-soft);}
+.contact-row{display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;}
+.contact-row button{flex:1; min-width:100px; font-size:13px; padding:10px;}
+
+/* ---------- Bottom sheet: matches list ---------- */
+.matches-sheet{position:fixed; inset:0; background:rgba(18,49,46,.4); display:none; align-items:flex-end; justify-content:center; z-index:40;}
+.matches-sheet.show{display:flex;}
+.matches-card{background:var(--surface); width:100%; max-width:520px; max-height:80vh; overflow-y:auto; border-radius:18px 18px 0 0; padding:18px;}
+.match-item{display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--border);}
+.match-item:last-child{border-bottom:none;}
+.match-info{flex:1;}
+.match-info h4{font-size:14px; font-weight:500;}
+.match-info span{font-size:12px; color:var(--ink-soft);}
+
+/* ---------- Ask question modal ---------- */
+.modal-overlay{position:fixed; inset:0; background:rgba(18,49,46,.4); display:none; align-items:center; justify-content:center; z-index:50; padding:16px;}
+.modal-overlay.show{display:flex;}
+.modal-card{background:var(--surface); border-radius:18px; padding:22px; width:100%; max-width:420px;}
+.modal-card h2{font-size:17px; font-weight:700; margin-bottom:16px;}
+.field-label{font-size:13px; color:var(--ink-soft); margin-bottom:6px; display:block;}
+.field-group{margin-bottom:14px;}
+
+/* ---------- Teacher form ---------- */
+.form-screen{padding:20px 16px 100px; max-width:520px; margin:0 auto;}
+.form-screen h2{font-size:18px; font-weight:700; margin-bottom:4px;}
+.form-screen p.hint{color:var(--ink-soft); font-size:13px; margin-bottom:20px;}
+.upload-box{border:1.5px dashed var(--border); border-radius:12px; padding:20px; text-align:center; color:var(--ink-soft); font-size:13px;}
+.upload-box i{font-size:24px; color:var(--teal); display:block; margin-bottom:8px;}
+.status-card{background:var(--amber-light); border-radius:14px; padding:18px; display:flex; gap:12px; align-items:flex-start; margin-top:20px;}
+.status-card i{color:var(--amber); font-size:20px;}
+
+/* ---------- Bottom nav (mobile) ---------- */
+.bottom-nav{position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-top:1px solid var(--border); display:flex; z-index:25;}
+.bottom-nav button{flex:1; padding:10px 0 8px; display:flex; flex-direction:column; align-items:center; gap:3px; background:transparent; color:var(--ink-soft); font-size:11px; border-radius:0;}
+.bottom-nav button i{font-size:20px;}
+.bottom-nav button.active{color:var(--teal-dark); font-weight:500;}
+
+/* ---------- Responsive: tablet+ ---------- */
+@media (min-width:768px){
+  body{padding-bottom:0;}
+  .bottom-nav{display:none;}
+  .app-shell{display:flex; min-height:100vh;}
+  .side-nav{width:220px; flex-shrink:0; background:var(--surface); border-left:1px solid var(--border); padding:20px 14px; display:flex; flex-direction:column; gap:4px;}
+  .side-nav .brand{padding:0 8px 20px;}
+  .side-nav button{display:flex; align-items:center; gap:10px; padding:11px 12px; background:transparent; color:var(--ink-soft); font-size:14px; border-radius:10px; text-align:right; width:100%;}
+  .side-nav button.active{background:var(--teal-light); color:var(--teal-dark); font-weight:500;}
+  .side-nav button i{font-size:19px;}
+  .main-area{flex:1; min-width:0;}
+  .topbar-mobile-only{display:none;}
+  .home-layout{padding:16px 24px 24px; display:grid; grid-template-columns:300px 1fr; gap:16px;}
+  .map-panel{height:calc(100vh - 150px); min-height:460px;}
+  .filters-panel{background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:16px;}
+  .filters-panel h3{font-size:14px; margin-bottom:12px;}
+  .chip-row{padding:0; flex-direction:column; align-items:stretch;}
+  .chip{text-align:right;}
+  .ask-fab{left:340px; bottom:32px;}
+  .teacher-popup{position:absolute; left:16px; bottom:16px; right:auto; width:280px; border-radius:16px; transform:translateY(0) scale(0.95); opacity:0; pointer-events:none; transition:all .2s ease;}
+  .teacher-popup.show{opacity:1; transform:scale(1); pointer-events:auto;}
+  .matches-sheet{align-items:center;}
+  .matches-card{border-radius:18px; max-width:460px;}
+}
+@media (min-width:1200px){
+  .home-layout{grid-template-columns:340px 1fr; padding:24px 40px;}
+  .ask-fab{left:calc(340px + 40px);}
+}
+</style>
+</head>
+<body>
+
+<!-- ================= AUTH SCREEN ================= -->
+<div id="screen-auth" class="screen active">
+  <div class="auth-card">
+    <div class="auth-logo"><i class="ti ti-map-pin-2"></i></div>
+    <h1>دليلي</h1>
+    <p>لاقِ مدرّسك بالتخصص المطلوب قريب منك</p>
+
+    <div class="role-toggle">
+      <button class="active" data-role="student" onclick="setRole('student')">أنا طالب</button>
+      <button data-role="teacher" onclick="setRole('teacher')">أنا مدرّس</button>
+    </div>
+
+    <div class="divider" style="margin-top:20px;">سجّل الدخول عبر</div>
+
+    <div class="tab-row">
+      <button class="active" data-tab="email" onclick="switchAuthTab('email')">البريد</button>
+      <button data-tab="phone" onclick="switchAuthTab('phone')">الهاتف</button>
+      <button data-tab="guest" onclick="switchAuthTab('guest')">بدون حساب</button>
+    </div>
+
+    <div class="auth-field active" data-field="email">
+      <input type="email" id="auth-email-input" placeholder="name@example.com">
+    </div>
+    <div class="auth-field" data-field="phone">
+      <input type="tel" id="auth-phone-input" placeholder="07xx xxx xxxx">
+    </div>
+    <div class="auth-field" data-field="guest">
+      <p style="font-size:12px; color:var(--ink-soft); text-align:right;">بإمكانك تصفح الخريطة والمدرسين، وبيتطلب تسجيل حساب فقط لما تحب ترسل سؤال.</p>
+    </div>
+
+    <div id="student-extra-fields" style="text-align:right; margin-top:6px;">
+      <div class="divider">معلوماتي</div>
+      <div class="field-group"><input type="text" id="student-name" placeholder="الاسم الكامل"></div>
+      <div class="field-group" id="student-phone-group"><input type="tel" id="student-phone" placeholder="رقم الهاتف"></div>
+      <div class="field-group">
+        <select id="student-gov"></select>
+      </div>
+      <div class="field-group">
+        <select id="student-stage"></select>
+      </div>
+      <div class="field-group">
+        <label class="field-label">بطاقة الهوية أو الهوية الطلابية (اختياري)</label>
+        <div class="upload-box" style="padding:14px;"><i class="ti ti-upload" style="font-size:18px; margin-bottom:4px;"></i>اضغط لاختيار صورة</div>
+      </div>
+    </div>
+
+    <div class="auth-actions">
+      <button class="btn-primary" onclick="completeAuth()">متابعة</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= APP SHELL ================= -->
+<div class="app-shell" id="app-shell" style="display:none;">
+
+  <nav class="side-nav">
+    <div class="brand"><i class="ti ti-map-pin-2"></i> دليلي</div>
+    <button class="active" onclick="showScreen('home')" data-nav="home"><i class="ti ti-map"></i> الخريطة</button>
+    <button onclick="openAskModal()" data-nav="ask"><i class="ti ti-message-2-question"></i> اسأل سؤالاً</button>
+    <button onclick="showScreen('teacher-form')" data-nav="teacher"><i class="ti ti-school"></i> سجّل كمدرّس</button>
+    <button onclick="showScreen('my-profile')" data-nav="profile"><i class="ti ti-user-circle"></i> ملفي الشخصي</button>
+    <button onclick="showScreen('admin')" data-nav="admin" style="margin-top:auto; color:var(--ink-soft);"><i class="ti ti-settings"></i> لوحة تحكم الإدارة</button>
+  </nav>
+
+  <div class="main-area">
+
+    <!-- ============ HOME (map) ============ -->
+    <div id="screen-home" class="screen active">
+      <div class="topbar topbar-mobile-only">
+        <div class="topbar-inner">
+          <div class="brand"><i class="ti ti-map-pin-2"></i> دليلي</div>
+          <div class="search-wrap">
+            <i class="ti ti-search"></i>
+            <input type="text" placeholder="ابحث باسم المدرس...">
+          </div>
+          <button class="icon-btn" onclick="showScreen('my-profile')"><i class="ti ti-user-circle"></i></button>
+        </div>
+        <div style="padding:0 16px 10px;"><select id="gov-select-mobile" onchange="onGovChange(this.value)"></select></div>
+        <div class="chip-row" id="chip-row-mobile"></div>
+      </div>
+
+      <div class="container" style="padding:14px 16px 0;">
+        <div class="ads-banner" id="ads-banner">
+          <div class="ads-track" id="ads-track"></div>
+          <div class="ads-dots" id="ads-dots"></div>
+        </div>
+
+        <div style="margin:18px 0 8px; display:flex; align-items:center; justify-content:space-between;">
+          <h3 style="font-size:15px; font-weight:700;">الأخبار</h3>
+        </div>
+        <div class="news-row" id="news-row"></div>
+      </div>
+
+      <div class="home-layout">
+        <div class="filters-panel">
+          <h3>المحافظة</h3>
+          <select id="gov-select-desktop" onchange="onGovChange(this.value)" style="margin-bottom:18px;"></select>
+          <h3>المادة</h3>
+          <div class="chip-row" id="chip-row-desktop"></div>
+        </div>
+
+        <div class="map-panel" id="map-panel">
+          <svg class="map-bg" viewBox="0 0 640 500" preserveAspectRatio="xMidYMid slice">
+            <line x1="0" y1="100" x2="640" y2="100" stroke="#E4E9E7" stroke-width="1"/>
+            <line x1="0" y1="200" x2="640" y2="200" stroke="#E4E9E7" stroke-width="1"/>
+            <line x1="0" y1="300" x2="640" y2="300" stroke="#E4E9E7" stroke-width="1"/>
+            <line x1="0" y1="400" x2="640" y2="400" stroke="#E4E9E7" stroke-width="1"/>
+            <line x1="160" y1="0" x2="160" y2="500" stroke="#E4E9E7" stroke-width="1"/>
+            <line x1="320" y1="0" x2="320" y2="500" stroke="#E4E9E7" stroke-width="1"/>
+            <line x1="480" y1="0" x2="480" y2="500" stroke="#E4E9E7" stroke-width="1"/>
+            <path d="M 340 10 C 300 110, 360 200, 310 290 C 270 360, 300 420, 260 495" stroke="#B9C6C2" stroke-width="2" fill="none"/>
+            <text x="290" y="250" font-size="12" fill="#8FA39D" font-family="Tajawal">بغداد</text>
+            <text x="430" y="70" font-size="12" fill="#8FA39D" font-family="Tajawal">أربيل</text>
+            <text x="200" y="440" font-size="12" fill="#8FA39D" font-family="Tajawal">النجف</text>
+            <text x="140" y="70" font-size="12" fill="#8FA39D" font-family="Tajawal">الموصل</text>
+            <text x="380" y="460" font-size="12" fill="#8FA39D" font-family="Tajawal">البصرة</text>
+          </svg>
+          <div class="map-badge" id="map-badge"><i class="ti ti-radar"></i> جاري توسيع نطاق البحث</div>
+          <div id="pins-container"></div>
+        </div>
+      </div>
+
+      <button class="ask-fab" onclick="openAskModal()"><i class="ti ti-message-2-question"></i> اسأل سؤالاً</button>
+    </div>
+
+    <!-- ============ TEACHER FORM ============ -->
+    <div id="screen-teacher-form" class="screen">
+      <div class="form-screen" id="teacher-form-body">
+        <h2>سجّل كمدرّس</h2>
+        <p class="hint">هالمعلومات رح تظهر بملفك الشخصي وعلى الخريطة (حسب إعدادات الخصوصية).</p>
+
+        <div class="field-group" style="display:flex; align-items:center; gap:14px;">
+          <div id="teacher-photo-preview" style="width:64px; height:64px; border-radius:50%; background:var(--teal-light); color:var(--teal-dark); display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; overflow:hidden;"><i class="ti ti-camera"></i></div>
+          <div style="flex:1;">
+            <label class="field-label">الصورة الشخصية</label>
+            <input type="file" accept="image/*" id="teacher-photo-input" onchange="previewTeacherPhoto(this)">
+          </div>
+        </div>
+        <div class="field-group"><label class="field-label">الاسم الكامل</label><input type="text" id="teacher-name" placeholder="مثلاً: أحمد الجبوري"></div>
+        <div class="field-group"><label class="field-label">رقم الهاتف</label><input type="tel" id="teacher-phone" placeholder="07xx xxx xxxx"></div>
+        <div class="field-group"><label class="field-label">المدرسة (إن وجد)</label><input type="text" id="teacher-school" placeholder="اسم المدرسة"></div>
+        <div class="field-group"><label class="field-label">المعهد (إن وجد)</label><input type="text" id="teacher-institute" placeholder="اسم المعهد"></div>
+        <div class="field-group"><label class="field-label">المحافظة</label><select id="teacher-gov"></select></div>
+        <div class="field-group">
+          <label class="field-label">المراحل الدراسية اللي بتدرّسها (تقدر تختار أكتر من وحدة)</label>
+          <div id="teacher-stages" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">التخصص</label>
+          <select id="teacher-subject"></select>
+        </div>
+        <div class="field-group"><label class="field-label">رابط تلغرام (اختياري)</label><input type="url" id="teacher-telegram" placeholder="https://t.me/username"></div>
+        <div class="field-group"><label class="field-label">رابط انستغرام (اختياري)</label><input type="url" id="teacher-instagram" placeholder="https://instagram.com/username"></div>
+        <div class="field-group"><label class="field-label">البريد الإلكتروني</label><input type="email" id="teacher-email" placeholder="name@example.com"></div>
+
+        <div class="field-group">
+          <label class="field-label">إثبات الهوية التعليمية</label>
+          <div class="upload-box"><i class="ti ti-upload"></i> اسحب الملف هون أو اضغط للاختيار<br><span style="font-size:11px;">هوية جامعية، بطاقة تدريس، أو شهادة تخرج</span></div>
+        </div>
+
+        <div class="field-group" style="display:flex; align-items:center; justify-content:space-between; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:12px 14px;">
+          <span style="font-size:14px;">إظهار موقعي على الخريطة</span>
+          <input type="checkbox" id="teacher-location-visible" checked style="width:auto;">
+        </div>
+
+        <button class="btn-primary" style="width:100%; margin-top:8px;" onclick="submitTeacherForm()">إرسال للمراجعة</button>
+
+        <div class="status-card" id="teacher-status-card" style="display:none;">
+          <i class="ti ti-clock-hour-4"></i>
+          <div>
+            <strong style="font-size:14px;">حسابك قيد المراجعة</strong>
+            <p style="font-size:13px; color:var(--ink-soft); margin-top:4px;">رح نراجع الإثبات ونفعّل ظهورك على الخريطة خلال وقت قصير. رح توصلك رسالة لما تنقبل.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ MY PROFILE (placeholder demo) ============ -->
+    <div id="screen-my-profile" class="screen">
+      <div class="form-screen">
+        <h2>ملفي الشخصي</h2>
+        <p class="hint">هاي نسخة تجريبية — بالنسخة الفعلية رح تشوف هون كل المعلومات المسجّلة وسجل الأسئلة أو الردود.</p>
+
+        <div class="status-card" style="background:var(--surface); border:1px solid var(--border); align-items:center;">
+          <i class="ti ti-school" style="color:var(--teal-dark);"></i>
+          <div style="flex:1;">
+            <strong style="font-size:14px;">المرحلة الدراسية</strong>
+            <p style="font-size:13px; color:var(--ink-soft); margin-top:2px;" id="profile-stage-display">—</p>
+          </div>
+          <button class="btn-outline" style="font-size:12px; padding:8px 14px;" onclick="toggleStageEdit()">تعديل</button>
+        </div>
+
+        <div id="stage-edit-box" style="display:none; margin-top:12px; background:var(--amber-light); border-radius:12px; padding:14px;">
+          <p style="font-size:12px; color:var(--amber); margin-bottom:10px;"><i class="ti ti-alert-triangle" style="vertical-align:-2px;"></i> تغيير المرحلة رح يمسح كل الأسئلة السابقة اللي سألتها.</p>
+          <select id="stage-edit-select"></select>
+          <div style="display:flex; gap:8px; margin-top:10px;">
+            <button class="btn-primary" style="flex:1; font-size:13px;" onclick="confirmStageChange()">تأكيد التعديل</button>
+            <button class="btn-outline" style="flex:1; font-size:13px;" onclick="toggleStageEdit()">إلغاء</button>
+          </div>
+        </div>
+
+        <div class="status-card" style="background:var(--teal-light); margin-top:16px;">
+          <i class="ti ti-info-circle" style="color:var(--teal-dark);"></i>
+          <div><strong style="font-size:14px;">هذا نموذج أولي (Prototype)</strong>
+          <p style="font-size:13px; color:var(--ink-soft); margin-top:4px;">البيانات هون تجريبية وما تنحفظ. لازم بنية خلفية (Backend + قاعدة بيانات) حتى تصير البيانات حقيقية ودائمة.</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="screen-admin" class="screen">
+      <div class="form-screen">
+        <h2>لوحة تحكم الإدارة</h2>
+        <p class="hint">نموذج تجريبي — بالنسخة الفعلية هاي الشاشة محمية بتسجيل دخول خاص بالإدارة فقط.</p>
+
+        <div class="status-card" style="background:var(--surface); border:1px solid var(--border); display:block;">
+          <strong style="font-size:14px;">إضافة اختصاص جديد</strong>
+          <div style="display:flex; gap:8px; margin-top:10px;">
+            <input type="text" id="new-subject-input" placeholder="مثلاً: جغرافيا">
+            <button class="btn-primary" style="white-space:nowrap; padding:10px 18px;" onclick="addSubject()">إضافة</button>
+          </div>
+          <div id="admin-subjects-list" style="margin-top:14px;"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Bottom nav (mobile) -->
+<div class="bottom-nav" id="bottom-nav" style="display:none;">
+  <button class="active" onclick="showScreen('home')" data-nav="home"><i class="ti ti-map"></i>الخريطة</button>
+  <button onclick="openAskModal()" data-nav="ask"><i class="ti ti-message-2-question"></i>اسأل</button>
+  <button onclick="showScreen('teacher-form')" data-nav="teacher"><i class="ti ti-school"></i>مدرّس</button>
+  <button onclick="showScreen('my-profile')" data-nav="profile"><i class="ti ti-user-circle"></i>ملفي</button>
+  <button onclick="showScreen('admin')" data-nav="admin"><i class="ti ti-settings"></i>الإدارة</button>
+</div>
+
+<!-- Teacher popup -->
+<div class="teacher-popup" id="teacher-popup">
+  <div class="popup-head">
+    <div class="avatar" id="popup-avatar">؟</div>
+    <div class="popup-info">
+      <h3 id="popup-name">—</h3>
+      <p id="popup-meta">—</p>
+    </div>
+  </div>
+  <div id="popup-details"></div>
+  <div class="contact-row">
+    <button class="btn-primary" onclick="closePopup(); openAskModal();"><i class="ti ti-message-2"></i> اطرح سؤالاً</button>
+    <button class="btn-outline" onclick="closePopup()">إغلاق</button>
+  </div>
+</div>
+
+<!-- Ask question modal -->
+<div class="modal-overlay" id="ask-modal">
+  <div class="modal-card">
+    <h2>اسأل سؤالاً</h2>
+    <div class="field-group">
+      <label class="field-label">المادة</label>
+      <select id="ask-subject"></select>
+    </div>
+    <div class="field-group">
+      <label class="field-label">سؤالك</label>
+      <textarea rows="4" placeholder="اكتب سؤالك هون بالتفصيل..."></textarea>
+    </div>
+    <div style="display:flex; gap:10px;">
+      <button class="btn-primary" style="flex:1;" onclick="sendQuestion()">إرسال</button>
+      <button class="btn-outline" style="flex:1;" onclick="closeModal('ask-modal')">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- Matches sheet -->
+<div class="matches-sheet" id="matches-sheet">
+  <div class="matches-card">
+    <h2 style="font-size:16px; font-weight:700; margin-bottom:4px;">المدرسون المتاحون — <span id="session-subject-label"></span></h2>
+    <p style="font-size:13px; color:var(--ink-soft); margin-bottom:14px;">مرتبين حسب الأقرب لمحافظتك</p>
+    <div id="matches-list"></div>
+
+    <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border);">
+      <label class="field-label">عندك سؤال ثاني بنفس المادة؟</label>
+      <textarea id="followup-question" rows="2" placeholder="اكتب سؤالك هون..."></textarea>
+      <button class="btn-outline" style="width:100%; margin-top:8px;" onclick="sendFollowup()"><i class="ti ti-send"></i> إرسال السؤال</button>
+    </div>
+    <div id="session-log" style="margin-top:10px; font-size:12px; color:var(--ink-soft);"></div>
+
+    <button class="btn-primary" style="width:100%; margin-top:14px;" onclick="endSession()"><i class="ti ti-check"></i> إنهاء والعودة للمواد</button>
+  </div>
+</div>
+
+<script>
+const governorates = ["بغداد","البصرة","نينوى","أربيل","النجف","كربلاء","الأنبار","ديالى","ذي قار","بابل","واسط","ميسان","المثنى","القادسية","صلاح الدين","كركوك","دهوك","السليمانية"];
+const teachers = [
+  {name:"أحمد الجبوري", subject:"رياضيات", school:"معهد الرافدين", gov:"بغداد", stages:["السادس","طالب جامعي"], answered:14, dist:1.2, x:44, y:52},
+  {name:"سارة الكناني", subject:"رياضيات", school:"إعدادية النجاح", gov:"نينوى", stages:["الرابع","الخامس"], answered:6, dist:3.8, x:20, y:22},
+  {name:"محمد العبيدي", subject:"فيزياء", school:"جامعة بغداد", gov:"أربيل", stages:["طالب جامعي"], answered:21, dist:2.1, x:65, y:30},
+  {name:"زينب الموسوي", subject:"رياضيات", school:"معهد النور", gov:"النجف", stages:["الأول","الثاني","الثالث"], answered:3, dist:5.4, x:35, y:75},
+  {name:"علي الشمري", subject:"كيمياء", school:"إعدادية الفراهيدي", gov:"البصرة", stages:["السادس"], answered:9, dist:4.0, x:75, y:68},
+];
+const stages = ["الأول","الثاني","الثالث","الرابع","الخامس","السادس","طالب جامعي"];
+let subjects = ["رياضيات","فيزياء","كيمياء","إنكليزي","أحياء"];
+let activeSubject = "الكل";
+let activeGov = "الكل";
+let studentGov = "بغداد";
+let studentStage = "السادس";
+let selectedRole = "student";
+const govCoords = {
+  "دهوك":{x:70,y:8}, "نينوى":{x:80,y:14}, "أربيل":{x:58,y:16}, "السليمانية":{x:35,y:18},
+  "كركوك":{x:55,y:26}, "صلاح الدين":{x:65,y:33}, "الأنبار":{x:85,y:46}, "ديالى":{x:25,y:44},
+  "بغداد":{x:44,y:52}, "بابل":{x:50,y:60}, "واسط":{x:20,y:58}, "كربلاء":{x:60,y:62},
+  "النجف":{x:65,y:72}, "القادسية":{x:50,y:75}, "ميسان":{x:15,y:80}, "المثنى":{x:60,y:84},
+  "ذي قار":{x:40,y:85}, "البصرة":{x:30,y:92}
+};
+let currentSessionSubject = null;
+let sessionQuestionsCount = 0;
+
+function fillGovSelects(){
+  const targets = ["student-gov","teacher-gov"];
+  targets.forEach(id => {
+    const el = document.getElementById(id);
+    el.innerHTML = governorates.map(g => `<option value="${g}">${g}</option>`).join("");
+  });
+  const mapTargets = ["gov-select-mobile","gov-select-desktop"];
+  mapTargets.forEach(id => {
+    const el = document.getElementById(id);
+    el.innerHTML = '<option value="الكل">كل المحافظات</option>' + governorates.map(g => `<option value="${g}">${g}</option>`).join("");
+  });
+
+  const stageSelects = ["student-stage","stage-edit-select"];
+  stageSelects.forEach(id => {
+    const el = document.getElementById(id);
+    el.innerHTML = stages.map(s => `<option value="${s}">${s === "طالب جامعي" ? s : "الصف " + s}</option>`).join("");
+  });
+
+  const box = document.getElementById('teacher-stages');
+  box.innerHTML = stages.map(s => `
+    <label style="display:flex; align-items:center; gap:6px; font-size:12px; border:1px solid var(--border); border-radius:8px; padding:7px 10px; background:#fff;">
+      <input type="checkbox" value="${s}" style="width:auto;">${s === "طالب جامعي" ? s : "الصف " + s}
+    </label>`).join("");
+}
+function onGovChange(val){
+  activeGov = val;
+  document.getElementById('gov-select-mobile').value = val;
+  document.getElementById('gov-select-desktop').value = val;
+  renderPins();
+}
+
+function initials(name){ return name.split(" ")[0][0] + (name.split(" ")[1] ? name.split(" ")[1][0] : ""); }
+
+function renderChips(){
+  const rows = [document.getElementById('chip-row-mobile'), document.getElementById('chip-row-desktop')];
+  const list = ["الكل", ...subjects];
+  rows.forEach(row => {
+    row.innerHTML = "";
+    list.forEach(s => {
+      const b = document.createElement('button');
+      b.className = 'chip' + (s === activeSubject ? ' active' : '');
+      b.textContent = s;
+      b.onclick = () => { activeSubject = s; renderChips(); renderPins(); };
+      row.appendChild(b);
+    });
+  });
+}
+function renderSubjectSelects(){
+  const opts = subjects.map(s => `<option>${s}</option>`).join("");
+  document.getElementById('teacher-subject').innerHTML = opts;
+  document.getElementById('ask-subject').innerHTML = opts;
+}
+function renderAdminSubjects(){
+  const list = document.getElementById('admin-subjects-list');
+  if (!list) return;
+  list.innerHTML = subjects.map((s,i) => `
+    <div style="display:flex; align-items:center; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--border); font-size:14px;">
+      ${s}
+      <button class="btn-outline" style="padding:5px 10px; font-size:12px;" onclick="removeSubject(${i})"><i class="ti ti-trash"></i></button>
+    </div>`).join("");
+}
+function addSubject(){
+  const input = document.getElementById('new-subject-input');
+  const val = input.value.trim();
+  if (!val || subjects.includes(val)) return;
+  subjects.push(val);
+  input.value = '';
+  renderChips(); renderSubjectSelects(); renderAdminSubjects();
+}
+function removeSubject(i){
+  if (activeSubject === subjects[i]) activeSubject = "الكل";
+  subjects.splice(i,1);
+  renderChips(); renderSubjectSelects(); renderAdminSubjects(); renderPins();
+}
+
+function renderPins(){
+  const container = document.getElementById('pins-container');
+  container.innerHTML = "";
+  const nearest = [...teachers].sort((a,b)=>a.dist-b.dist)[0];
+  teachers.forEach((t, i) => {
+    const subjectOk = activeSubject === "الكل" || t.subject === activeSubject;
+    const govOk = activeGov === "الكل" || t.gov === activeGov;
+    const visible = subjectOk && govOk;
+    const pin = document.createElement('div');
+    pin.className = 'pin' + (t.isMe ? ' me' : (t === nearest ? ' nearest' : '')) + (visible ? '' : ' hidden');
+    pin.style.right = t.x + '%';
+    pin.style.top = t.y + '%';
+    pin.onclick = () => openPopup(t);
+    container.appendChild(pin);
+  });
+}
+
+function answeredBadge(t){
+  if (!t.answered) return '';
+  return `<span style="display:inline-flex; align-items:center; gap:5px; font-size:12px; color:var(--ink-soft); margin-top:3px;">
+    <span style="width:7px; height:7px; border-radius:50%; background:#2E9E5B; display:inline-block;"></span>
+    أجاب على ${t.answered} ${t.answered === 1 ? 'طالب' : 'طلاب'}
+  </span>`;
+}
+
+function openPopup(t){
+  document.getElementById('popup-avatar').textContent = initials(t.name);
+  document.getElementById('popup-name').textContent = t.name;
+  document.getElementById('popup-meta').innerHTML = t.subject + ' · ' + t.school + ' · ' + t.gov + '<br>' + answeredBadge(t);
+
+  const details = document.getElementById('popup-details');
+  let rows = '';
+  if (t.phone) rows += `<div style="display:flex; align-items:center; gap:8px; font-size:13px; padding:8px 0; border-top:1px solid var(--border);"><i class="ti ti-phone" style="color:var(--ink-soft);"></i>${t.phone}</div>`;
+  if (t.telegram) rows += `<div style="display:flex; align-items:center; gap:8px; font-size:13px; padding:8px 0; border-top:1px solid var(--border);"><i class="ti ti-brand-telegram" style="color:var(--ink-soft);"></i><a href="${t.telegram}" target="_blank" style="color:var(--teal-dark);">فتح تلغرام</a></div>`;
+  if (t.instagram) rows += `<div style="display:flex; align-items:center; gap:8px; font-size:13px; padding:8px 0; border-top:1px solid var(--border);"><i class="ti ti-brand-instagram" style="color:var(--ink-soft);"></i><a href="${t.instagram}" target="_blank" style="color:var(--teal-dark);">فتح انستغرام</a></div>`;
+  if (t.email) rows += `<div style="display:flex; align-items:center; gap:8px; font-size:13px; padding:8px 0; border-top:1px solid var(--border);"><i class="ti ti-mail" style="color:var(--ink-soft);"></i>${t.email}</div>`;
+  details.innerHTML = rows;
+
+  document.getElementById('teacher-popup').classList.add('show');
+}
+function closePopup(){ document.getElementById('teacher-popup').classList.remove('show'); }
+
+function switchAuthTab(tab){
+  document.querySelectorAll('.tab-row button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.auth-field').forEach(f => f.classList.toggle('active', f.dataset.field === tab));
+  const phoneGroup = document.getElementById('student-phone-group');
+  if (phoneGroup) phoneGroup.style.display = (tab === 'phone') ? 'none' : 'block';
+}
+function setRole(role){
+  selectedRole = role;
+  document.querySelectorAll('.role-toggle button').forEach(b => b.classList.toggle('active', b.dataset.role === role));
+}
+function completeAuth(){
+  document.getElementById('screen-auth').classList.remove('active');
+  document.getElementById('app-shell').style.display = 'flex';
+  document.getElementById('bottom-nav').style.display = 'flex';
+  if (selectedRole === 'student'){
+    const activeTab = document.querySelector('.tab-row button.active').dataset.tab;
+    if (activeTab === 'phone'){
+      document.getElementById('student-phone').value = document.getElementById('auth-phone-input').value;
+    }
+    studentGov = document.getElementById('student-gov').value || 'بغداد';
+    studentStage = document.getElementById('student-stage').value || 'السادس';
+    activeGov = studentGov;
+    updateStageDisplay();
+  }
+  renderChips();
+  fillGovSelects();
+  document.getElementById('gov-select-mobile').value = activeGov;
+  document.getElementById('gov-select-desktop').value = activeGov;
+  renderPins();
+  if (selectedRole === 'teacher') showScreen('teacher-form');
+}
+
+function updateStageDisplay(){
+  const label = studentStage === "طالب جامعي" ? studentStage : "الصف " + studentStage;
+  document.getElementById('profile-stage-display').textContent = label;
+}
+function toggleStageEdit(){
+  const box = document.getElementById('stage-edit-box');
+  const showing = box.style.display === 'block';
+  box.style.display = showing ? 'none' : 'block';
+  if (!showing) document.getElementById('stage-edit-select').value = studentStage;
+}
+function confirmStageChange(){
+  const newStage = document.getElementById('stage-edit-select').value;
+  studentStage = newStage;
+  updateStageDisplay();
+  document.getElementById('stage-edit-box').style.display = 'none';
+  currentSessionSubject = null;
+  sessionQuestionsCount = 0;
+  document.getElementById('session-log').textContent = '';
+  alert('تم تعديل المرحلة الدراسية، وانمسحت كل الأسئلة السابقة.');
+}
+
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  document.querySelectorAll('[data-nav]').forEach(b => b.classList.toggle('active', b.dataset.nav === (name === 'my-profile' ? 'profile' : name === 'teacher-form' ? 'teacher' : name)));
+}
+
+function openAskModal(){ document.getElementById('ask-modal').classList.add('show'); }
+function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+
+function sendQuestion(){
+  closeModal('ask-modal');
+  const subject = document.getElementById('ask-subject').value;
+  currentSessionSubject = subject;
+  sessionQuestionsCount = 1;
+  document.getElementById('session-subject-label').textContent = subject;
+  document.getElementById('session-log').textContent = '';
+  document.getElementById('followup-question').value = '';
+  runSearch(subject, true);
+}
+
+function sendFollowup(){
+  const text = document.getElementById('followup-question').value.trim();
+  if (!text || !currentSessionSubject) return;
+  sessionQuestionsCount++;
+  document.getElementById('followup-question').value = '';
+  document.getElementById('session-log').textContent = 'تم إرسال سؤالك رقم ' + sessionQuestionsCount + ' بمادة ' + currentSessionSubject + '. رح توصلك الردود كرسائل خاصة من نفس المدرسين.';
+}
+
+function markAnswered(teacherIndex, rowIndex){
+  teachers[teacherIndex].answered = (teachers[teacherIndex].answered || 0) + 1;
+  const btn = document.getElementById('mark-answered-' + rowIndex);
+  btn.textContent = 'تم ✓';
+  btn.disabled = true;
+  btn.style.opacity = '0.6';
+  document.getElementById('answered-badge-' + rowIndex).innerHTML = answeredBadge(teachers[teacherIndex]);
+}
+
+function endSession(){
+  currentSessionSubject = null;
+  sessionQuestionsCount = 0;
+  closeModal('matches-sheet');
+  showScreen('home');
+  activeSubject = "الكل";
+  renderChips();
+  renderPins();
+}
+
+function runSearch(subject, showRipple){
+  const badge = document.getElementById('map-badge');
+  badge.classList.add('show');
+
+  const inGov = teachers.filter(t => t.subject === subject && t.gov === studentGov);
+  const nearest = inGov.sort((a,b)=>a.dist-b.dist)[0];
+  let ring = null;
+  if (nearest){
+    ring = document.createElement('div');
+    ring.className = 'ripple-ring';
+    ring.style.width = '16px'; ring.style.height = '16px';
+    ring.style.right = nearest.x + '%'; ring.style.top = nearest.y + '%';
+    document.getElementById('pins-container').appendChild(ring);
+  }
+
+  setTimeout(() => {
+    badge.classList.remove('show');
+    if (ring) ring.remove();
+    const matches = inGov.sort((a,b)=>a.dist-b.dist);
+    const list = document.getElementById('matches-list');
+    list.innerHTML = "";
+    if (matches.length === 0){
+      list.innerHTML = `<p style="font-size:13px; color:var(--ink-soft); text-align:center; padding:20px 0;">لا يوجد مدرسون بمادة ${subject} بمحافظة ${studentGov} حالياً. رح نبلغك أول ما ينسجل حدا.</p>`;
+    } else {
+      matches.forEach((t, idx) => {
+        const row = document.createElement('div');
+        row.className = 'match-item';
+        row.id = 'match-row-' + idx;
+        row.innerHTML = `<div class="avatar" style="width:38px;height:38px;font-size:13px;">${initials(t.name)}</div>
+          <div class="match-info"><h4>${t.name}</h4><span>${t.school} · ${t.dist} كم</span><span id="answered-badge-${idx}">${answeredBadge(t)}</span></div>
+          <button class="btn-outline" style="padding:8px 12px; font-size:12px;" id="mark-answered-${idx}" onclick="markAnswered(${teachers.indexOf(t)}, ${idx})">تم الرد ✓</button>`;
+        list.appendChild(row);
+      });
+    }
+    document.getElementById('matches-sheet').classList.add('show');
+  }, 1600);
+}
+
+function previewTeacherPhoto(input){
+  if (!input.files || !input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const box = document.getElementById('teacher-photo-preview');
+    box.innerHTML = '';
+    box.style.backgroundImage = `url(${e.target.result})`;
+    box.style.backgroundSize = 'cover';
+    box.style.backgroundPosition = 'center';
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+function submitTeacherForm(){
+  const name = document.getElementById('teacher-name').value.trim();
+  const phone = document.getElementById('teacher-phone').value.trim();
+  const gov = document.getElementById('teacher-gov').value;
+  if (!name || !phone){
+    alert('لازم تعبّي الاسم ورقم الهاتف على الأقل');
+    return;
+  }
+  document.getElementById('teacher-status-card').style.display = 'flex';
+
+  const locationVisible = document.getElementById('teacher-location-visible').checked;
+  if (locationVisible){
+    const base = govCoords[gov] || {x:44,y:52};
+    const selectedStages = [...document.querySelectorAll('#teacher-stages input:checked')].map(c => c.value);
+    teachers.push({
+      name: name,
+      subject: document.getElementById('teacher-subject').value,
+      school: document.getElementById('teacher-school').value.trim() || document.getElementById('teacher-institute').value.trim() || "—",
+      gov: gov,
+      stages: selectedStages,
+      answered: 0,
+      dist: 0.1,
+      x: base.x + (Math.random()*6-3),
+      y: base.y + (Math.random()*6-3),
+      isMe: true,
+      phone: phone,
+      telegram: document.getElementById('teacher-telegram').value.trim(),
+      instagram: document.getElementById('teacher-instagram').value.trim(),
+      email: document.getElementById('teacher-email').value.trim()
+    });
+    activeGov = gov;
+    document.getElementById('gov-select-mobile').value = gov;
+    document.getElementById('gov-select-desktop').value = gov;
+    renderPins();
+  }
+}
+
+const ads = [
+  {img:"https://picsum.photos/seed/study1/900/300", caption:"باقة دروس تقوية لمادة الرياضيات — سجّل الآن"},
+  {img:"https://picsum.photos/seed/study2/900/300", caption:"مدرسون جدد انضموا هالأسبوع بمحافظتك"},
+  {img:"https://picsum.photos/seed/study3/900/300", caption:"نصائح للمذاكرة قبل الامتحانات النهائية"},
+];
+let adIndex = 0;
+function initAds(){
+  const track = document.getElementById('ads-track');
+  const dots = document.getElementById('ads-dots');
+  track.innerHTML = ads.map(a => `<div style="background-image:url('${a.img}')"><span>${a.caption}</span></div>`).join("");
+  dots.innerHTML = ads.map((a,i) => `<span class="${i===0?'active':''}"></span>`).join("");
+  setInterval(() => {
+    adIndex = (adIndex + 1) % ads.length;
+    track.style.transform = `translateX(-${adIndex * 100}%)`;
+    dots.querySelectorAll('span').forEach((d,i) => d.classList.toggle('active', i === adIndex));
+  }, 3500);
+}
+
+const newsItems = [
+  {img:"https://picsum.photos/seed/news1/400/220", caption:"بدء التسجيل بمنصة دليلي لكل محافظات العراق"},
+  {img:"https://picsum.photos/seed/news2/400/220", caption:"أكثر من 50 مدرّس موثّق انضموا هالشهر"},
+  {img:"https://picsum.photos/seed/news3/400/220", caption:"تحديث جديد: إمكانية اختيار أكتر من مرحلة دراسية للمدرّس"},
+];
+function initNews(){
+  document.getElementById('news-row').innerHTML = newsItems.map(n => `
+    <div class="news-card">
+      <img src="${n.img}" alt="">
+      <p>${n.caption}</p>
+    </div>`).join("");
+}
+
+fillGovSelects();
+renderChips();
+renderSubjectSelects();
+renderAdminSubjects();
+initAds();
+initNews();
+</script>
+</body>
+</html>
