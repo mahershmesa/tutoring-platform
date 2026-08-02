@@ -1,4 +1,5 @@
 import HomeView from "@/components/HomeView";
+import AuthNav from "@/components/AuthNav";
 import { createClient } from "@/lib/supabase/server";
 import type { MapTeacher, Subject } from "@/lib/supabase/types";
 
@@ -32,13 +33,14 @@ export default async function HomePage() {
 
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-5 px-4 py-6">
-      <header className="flex items-center justify-between">
+      <header className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-teal-dark">دليلي</h1>
           <p className="text-sm text-ink-soft">
             ابحث عن مدرّس موثّق قريب منك حسب المادة والمحافظة
           </p>
         </div>
+        <AuthNav />
       </header>
 
       {!connected && (
