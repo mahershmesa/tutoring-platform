@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* أنماط Leaflet الأساسية (نستوردها هنا حتى تُحزَّم مع التطبيق) */
+@import "leaflet/dist/leaflet.css";
+
+/* الخريطة تملأ الحاوية */
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  background: #dfebec;
+  font-family: inherit;
+}
+
+/* نقطة المدرّس الصفراء */
+.teacher-pin {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #f0a500;
+  border: 3px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
