@@ -35,5 +35,11 @@ export function createClient() {
         }
       },
     },
+    // بيانات المنصة تتغيّر باستمرار (توثيق، ظهور، مواد) — نمنع أي تخزين مؤقت
+    // على مستوى Next Data Cache حتى تكون كل قراءة حيّة من القاعدة.
+    global: {
+      fetch: (input: RequestInfo | URL, init?: RequestInit) =>
+        fetch(input, { ...init, cache: "no-store" }),
+    },
   });
 }

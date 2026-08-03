@@ -16,7 +16,44 @@ const teacherIcon = L.divIcon({
 // مركز العراق تقريباً
 const IRAQ_CENTER: [number, number] = [33.2, 43.7];
 
+// المدرّسون في نفس المحافظة يتشاركون نفس إحداثيات المركز بالضبط، فتتراكم
+// نقاطهم فوق بعض. نوزّعهم في حلقة صغيرة (~10كم) حول المركز حتى تظهر كل نقطة.
+// الترتيب ثابت (حسب ترتيب القاعدة) فلا "يقفز" الموضع بين التحميلات.
+const SPREAD_DEG = 0.09;
+
+function withDisplayPositions(
+  teachers: MapTeacher[],
+): { t: MapTeacher; pos: [number, number] }[] {
+  const groups = new Map<number, MapTeacher[]>();
+  for (const t of teachers) {
+    const arr = groups.get(t.governorate_id) ?? [];
+    arr.push(t);
+    groups.set(t.governorate_id, arr);
+  }
+
+  const out: { t: MapTeacher; pos: [number, number] }[] = [];
+  for (const group of Array.from(groups.values())) {
+    group.forEach((t, i) => {
+      if (group.length === 1) {
+        out.push({ t, pos: [t.latitude, t.longitude] });
+        return;
+      }
+      const angle = (2 * Math.PI * i) / group.length;
+      out.push({
+        t,
+        pos: [
+          t.latitude + SPREAD_DEG * Math.sin(angle),
+          t.longitude + SPREAD_DEG * Math.cos(angle),
+        ],
+      });
+    });
+  }
+  return out;
+}
+
 export default function TeacherMap({ teachers }: { teachers: MapTeacher[] }) {
+  const items = withDisplayPositions(teachers);
+
   return (
     <MapContainer
       center={IRAQ_CENTER}
@@ -28,12 +65,8 @@ export default function TeacherMap({ teachers }: { teachers: MapTeacher[] }) {
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      {teachers.map((t) => (
-        <Marker
-          key={t.user_id}
-          position={[t.latitude, t.longitude]}
-          icon={teacherIcon}
-        >
+      {items.map(({ t, pos }) => (
+        <Marker key={t.user_id} position={pos} icon={teacherIcon}>
           <Popup>
             <div className="space-y-1 text-right" dir="rtl">
               <p className="text-sm font-bold text-ink">{t.full_name}</p>

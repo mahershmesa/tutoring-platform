@@ -5,6 +5,7 @@ import type { MapTeacher, Subject } from "@/lib/supabase/types";
 
 // الصفحة ديناميكية: تقرأ من القاعدة عند كل طلب (بيانات حيّة)
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 async function getData(): Promise<{
   subjects: Subject[];
