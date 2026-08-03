@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { setTeacherVerification } from "@/lib/admin/actions";
+import { safeExternalUrl } from "@/lib/safe-url";
 
 export type ReviewTeacher = {
   user_id: string;
@@ -71,13 +72,13 @@ export default function TeacherReviewCard({ t }: { t: ReviewTeacher }) {
       </dl>
 
       <div className="mt-3 flex flex-wrap gap-3 text-xs">
-        {t.telegram_url && (
-          <a href={t.telegram_url} target="_blank" rel="noreferrer" className="text-teal-dark hover:underline">
+        {safeExternalUrl(t.telegram_url) && (
+          <a href={safeExternalUrl(t.telegram_url)!} target="_blank" rel="noreferrer" className="text-teal-dark hover:underline">
             تلغرام
           </a>
         )}
-        {t.instagram_url && (
-          <a href={t.instagram_url} target="_blank" rel="noreferrer" className="text-teal-dark hover:underline">
+        {safeExternalUrl(t.instagram_url) && (
+          <a href={safeExternalUrl(t.instagram_url)!} target="_blank" rel="noreferrer" className="text-teal-dark hover:underline">
             انستغرام
           </a>
         )}

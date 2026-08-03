@@ -79,7 +79,7 @@ export async function signup(
 
   const phone = normalizePhone(phoneRaw);
   if (!isValidPhone(phone)) return { error: "رقم هاتف غير صحيح (مثال: 07701234567)." };
-  if (password.length < 6) return { error: "كلمة المرور ٦ أحرف على الأقل." };
+  if (password.length < 8) return { error: "كلمة المرور ٨ أحرف على الأقل." };
 
   const { error } = await supabase.auth.signUp({
     email: phoneToEmail(phone),

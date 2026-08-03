@@ -70,11 +70,11 @@ export default function RegisterForm() {
           name="password"
           type="password"
           autoComplete="new-password"
-          minLength={6}
+          minLength={8}
           required
           className={inputClass}
         />
-        <p className="text-xs text-ink-soft">٦ أحرف على الأقل</p>
+        <p className="text-xs text-ink-soft">٨ أحرف على الأقل</p>
       </div>
 
       <SubmitButton>إنشاء حساب</SubmitButton>

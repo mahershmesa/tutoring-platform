@@ -5,9 +5,11 @@
 export function normalizePhone(raw: string): string {
   let d = (raw || "").replace(/\D/g, ""); // أرقام فقط
   if (d.startsWith("00")) d = d.slice(2);
-  if (d.startsWith("964")) return d;
-  if (d.startsWith("0")) return "964" + d.slice(1); // محلي 07xx → دولي
-  return d ? "964" + d : "";
+  // نوحّد إلى صيغة دولية تبدأ بـ 964 بلا صفر زائد
+  if (d.startsWith("964")) d = "964" + d.slice(3).replace(/^0+/, "");
+  else if (d.startsWith("0")) d = "964" + d.replace(/^0+/, "");
+  else if (d) d = "964" + d;
+  return d;
 }
 
 // رقم عراقي دولي = 964 + 10 أرقام = 13
