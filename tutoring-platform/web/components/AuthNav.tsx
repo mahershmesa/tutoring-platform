@@ -1,14 +1,17 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { signout } from "@/lib/auth/actions";
+import { isAdmin } from "@/lib/admin/guard";
 
 export default async function AuthNav() {
   const supabase = createClient();
   let user = null;
+  let admin = false;
 
   if (supabase) {
     const { data } = await supabase.auth.getUser();
     user = data.user;
+    if (user) admin = await isAdmin(supabase, user.id);
   }
 
   if (!user) {
@@ -35,6 +38,14 @@ export default async function AuthNav() {
 
   return (
     <div className="flex items-center gap-3 text-sm">
+      {admin && (
+        <Link
+          href="/admin"
+          className="rounded-xl bg-amber-light px-3 py-1.5 font-medium text-amber hover:bg-amber hover:text-white"
+        >
+          الإدارة
+        </Link>
+      )}
       <Link
         href="/profile"
         className="font-medium text-teal-dark hover:underline"
