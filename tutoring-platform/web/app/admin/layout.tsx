@@ -39,6 +39,18 @@ export default async function AdminLayout({
         >
           المواد
         </Link>
+        <Link
+          href="/admin/ads"
+          className="rounded-xl border border-border px-3 py-1.5 text-ink-soft hover:border-teal"
+        >
+          الإعلانات
+        </Link>
+        <Link
+          href="/admin/news"
+          className="rounded-xl border border-border px-3 py-1.5 text-ink-soft hover:border-teal"
+        >
+          الأخبار
+        </Link>
       </nav>
 
       {children}

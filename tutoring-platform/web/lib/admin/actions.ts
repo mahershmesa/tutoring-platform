@@ -72,3 +72,86 @@ export async function setSubjectActive(
   revalidatePath("/");
   return { ok: true };
 }
+
+// ---------- الإعلانات ----------
+
+export async function addAd(
+  imageUrl: string,
+  caption: string,
+  sortOrder: number,
+): Promise<ActionState> {
+  const supabase = await adminClient();
+  if (!supabase) return { error: "غير مصرّح." };
+  if (!imageUrl) return { error: "ارفع صورة الإعلان." };
+
+  const { error } = await supabase.from("ads").insert({
+    image_url: imageUrl,
+    caption: caption.trim() || null,
+    sort_order: Number.isFinite(sortOrder) ? sortOrder : 0,
+  });
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin/ads");
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function setAdActive(
+  id: string,
+  active: boolean,
+): Promise<ActionState> {
+  const supabase = await adminClient();
+  if (!supabase) return { error: "غير مصرّح." };
+
+  const { error } = await supabase.from("ads").update({ active }).eq("id", id);
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin/ads");
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function deleteAd(id: string): Promise<ActionState> {
+  const supabase = await adminClient();
+  if (!supabase) return { error: "غير مصرّح." };
+
+  const { error } = await supabase.from("ads").delete().eq("id", id);
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin/ads");
+  revalidatePath("/");
+  return { ok: true };
+}
+
+// ---------- الأخبار ----------
+
+export async function addNews(
+  caption: string,
+  imageUrl: string | null,
+): Promise<ActionState> {
+  const supabase = await adminClient();
+  if (!supabase) return { error: "غير مصرّح." };
+  const clean = caption.trim();
+  if (!clean) return { error: "اكتب نص الخبر." };
+
+  const { error } = await supabase
+    .from("news")
+    .insert({ caption: clean, image_url: imageUrl });
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin/news");
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function deleteNews(id: string): Promise<ActionState> {
+  const supabase = await adminClient();
+  if (!supabase) return { error: "غير مصرّح." };
+
+  const { error } = await supabase.from("news").delete().eq("id", id);
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin/news");
+  revalidatePath("/");
+  return { ok: true };
+}

@@ -33,3 +33,27 @@ export async function uploadFile(
   }
   return { path };
 }
+
+/**
+ * رفع وسائط إدارية عامة إلى bucket "ads" (إعلانات/أخبار).
+ * سياسة الكتابة: bucket_id='ads' AND is_admin() — بلا قيد مجلد المستخدم،
+ * فالإدارة ترفع بأي مسار. يرجّع الرابط العام مباشرةً.
+ */
+export async function uploadPublicMedia(
+  kind: "ad" | "news",
+  file: File,
+): Promise<string> {
+  const supabase = createClient();
+  const rawExt = file.name.includes(".") ? file.name.split(".").pop()! : "bin";
+  const ext = rawExt.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8) || "bin";
+  const path = `${kind}-${Date.now()}.${ext}`;
+
+  const { error } = await supabase.storage.from("ads").upload(path, file, {
+    cacheControl: "3600",
+    upsert: false,
+  });
+  if (error) throw new Error("فشل رفع الصورة: " + error.message);
+
+  const { data } = supabase.storage.from("ads").getPublicUrl(path);
+  return data.publicUrl;
+}
