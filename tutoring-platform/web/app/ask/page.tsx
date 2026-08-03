@@ -21,7 +21,11 @@ type MsgRow = {
   id: string;
   question_id: string;
   sender_id: string;
+  recipient_id: string | null;
   body: string;
+  attachment_path: string | null;
+  attachment_mime: string | null;
+  attachment_name: string | null;
 };
 
 export default async function AskPage() {
@@ -69,13 +73,28 @@ export default async function AskPage() {
         .in("question_id", qIds),
       supabase
         .from("messages")
-        .select("id, question_id, sender_id, body")
+        .select(
+          "id, question_id, sender_id, recipient_id, body, attachment_path, attachment_mime, attachment_name",
+        )
         .in("question_id", qIds)
         .order("sent_at", { ascending: true }),
     ]);
     notifs = (n.data as unknown as NotifRow[]) ?? [];
     msgs = (m.data as unknown as MsgRow[]) ?? [];
   }
+
+  // روابط موقّتة للمرفقات (RLS يضمن وصول الطرفين فقط)
+  const signed = new Map<string, string>();
+  await Promise.all(
+    msgs
+      .filter((m) => m.attachment_path)
+      .map(async (m) => {
+        const { data } = await supabase.storage
+          .from("message-attachments")
+          .createSignedUrl(m.attachment_path!, 3600);
+        if (data?.signedUrl) signed.set(m.attachment_path!, data.signedUrl);
+      }),
+  );
 
   const questions: StudentQuestionVM[] = questionRows.map((q) => {
     const qNotifs = notifs.filter((n) => n.question_id === q.id);
@@ -84,16 +103,23 @@ export default async function AskPage() {
       teacherName: n.teacher_profiles?.full_name ?? "مدرّس",
       answeredCount: n.teacher_profiles?.answered_count ?? 0,
       status: n.status,
+      // محادثة 1-إلى-1 فعلية: بين الطالب وهذا المدرّس تحديداً
       messages: msgs
         .filter(
           (m) =>
             m.question_id === q.id &&
-            (m.sender_id === n.teacher_id || m.sender_id === user.id),
+            ((m.sender_id === n.teacher_id && m.recipient_id === user.id) ||
+              (m.sender_id === user.id && m.recipient_id === n.teacher_id)),
         )
         .map((m) => ({
           id: m.id,
           fromMe: m.sender_id === user.id,
           body: m.body,
+          attachmentUrl: m.attachment_path
+            ? signed.get(m.attachment_path) ?? null
+            : null,
+          attachmentMime: m.attachment_mime,
+          attachmentName: m.attachment_name,
         })),
     }));
     return {

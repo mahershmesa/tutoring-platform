@@ -4,14 +4,16 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { sendQuestion, sendMessage, confirmAnswer } from "@/lib/qa/actions";
+import { uploadMessageAttachment } from "@/lib/supabase/upload";
 import StatusToast from "@/components/profile/StatusToast";
+import MessageBubble, { type MessageVM } from "@/components/qa/MessageBubble";
 
 export type StudentTeacherThread = {
   teacherId: string;
   teacherName: string;
   answeredCount: number;
   status: "sent" | "read" | "answered";
-  messages: { id: string; fromMe: boolean; body: string }[];
+  messages: MessageVM[];
 };
 export type StudentQuestionVM = {
   id: string;
@@ -174,18 +176,37 @@ function TeacherThread({
 }) {
   const router = useRouter();
   const [reply, setReply] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [fileKey, setFileKey] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
   const hasTeacherReply = t.messages.some((m) => !m.fromMe);
 
   async function onReply(e: React.FormEvent) {
     e.preventDefault();
-    if (!reply.trim()) return;
+    if (!reply.trim() && !file) return;
     setBusy(true);
-    await sendMessage(questionId, reply);
-    setReply("");
-    setBusy(false);
-    router.refresh();
+    setErr(null);
+    try {
+      let attachment = null;
+      if (file) {
+        // المرفق يُرفع لمجلد هذا المدرّس تحديداً
+        attachment = await uploadMessageAttachment(questionId, t.teacherId, file);
+      }
+      const res = await sendMessage(questionId, t.teacherId, reply, attachment);
+      if (res.error) setErr(res.error);
+      else {
+        setReply("");
+        setFile(null);
+        setFileKey((k) => k + 1);
+        router.refresh();
+      }
+    } catch (e2) {
+      setErr(e2 instanceof Error ? e2.message : "صار خطأ.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function onConfirm() {
@@ -223,34 +244,43 @@ function TeacherThread({
       {t.messages.length > 0 && (
         <div className="mt-2 space-y-1.5">
           {t.messages.map((m) => (
-            <div
-              key={m.id}
-              className={
-                "max-w-[85%] rounded-lg px-3 py-1.5 text-sm " +
-                (m.fromMe
-                  ? "ml-auto bg-teal-light text-ink"
-                  : "bg-white text-ink shadow-sm")
-              }
-            >
-              {m.body}
-            </div>
+            <MessageBubble key={m.id} m={m} />
           ))}
         </div>
       )}
 
-      <form onSubmit={onReply} className="mt-2 flex gap-2">
+      {err && (
+        <p className="mt-2 rounded-lg bg-red-50 px-2 py-1 text-xs text-red-700">
+          {err}
+        </p>
+      )}
+      {file && (
+        <p className="mt-2 text-xs text-ink-soft">📎 {file.name}</p>
+      )}
+
+      <form onSubmit={onReply} className="mt-2 flex items-center gap-2">
         <input
           value={reply}
           onChange={(e) => setReply(e.target.value)}
           placeholder="رسالة للمدرّس…"
           className="flex-1 rounded-lg border border-border bg-white px-3 py-1.5 text-sm outline-none focus:border-teal"
         />
+        <label className="cursor-pointer rounded-lg border border-border px-2 py-1.5 text-ink-soft hover:border-teal" title="إرفاق ملف أو صورة">
+          📎
+          <input
+            key={fileKey}
+            type="file"
+            accept="image/*,application/pdf"
+            className="hidden"
+            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          />
+        </label>
         <button
           type="submit"
           disabled={busy}
           className="rounded-lg bg-teal px-3 py-1.5 text-sm text-white hover:bg-teal-dark disabled:opacity-60"
         >
-          إرسال
+          {busy ? "…" : "إرسال"}
         </button>
       </form>
     </div>

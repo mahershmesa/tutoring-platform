@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { addSubject, setSubjectActive } from "@/lib/admin/actions";
+import { addSubjects, setSubjectActive } from "@/lib/admin/actions";
 
 export type AdminSubject = { id: string; name: string; active: boolean };
 
@@ -12,50 +12,64 @@ export default function SubjectManager({
   subjects: AdminSubject[];
 }) {
   const router = useRouter();
-  const [name, setName] = useState("");
+  const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
+  const [msg, setMsg] = useState<{ ok?: boolean; text: string } | null>(null);
 
   async function onAdd(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
-    setErr(null);
-    const res = await addSubject(name);
+    setMsg(null);
+    // فصل بسطر أو فاصلة
+    const names = text.split(/[\n,]+/);
+    const res = await addSubjects(names);
     setBusy(false);
-    if (res.error) setErr(res.error);
+    if (res.error) setMsg({ text: res.error });
     else {
-      setName("");
+      setText("");
+      setMsg({
+        ok: true,
+        text: `أُضيفت ${res.added ?? 0} مادة${
+          (res.skipped ?? 0) > 0 ? ` (وتُجوهلت ${res.skipped} موجودة مسبقاً)` : ""
+        }.`,
+      });
       router.refresh();
     }
   }
 
   async function toggle(id: string, active: boolean) {
     const res = await setSubjectActive(id, active);
-    if (res.error) setErr(res.error);
+    if (res.error) setMsg({ text: res.error });
     else router.refresh();
   }
 
   return (
     <section className="space-y-4">
-      <form onSubmit={onAdd} className="flex gap-2">
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="مثلاً: جغرافيا"
-          className="flex-1 rounded-xl border border-border bg-white px-3 py-2.5 text-sm outline-none focus:border-teal"
+      <form onSubmit={onAdd} className="space-y-2">
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          rows={3}
+          placeholder={"أضف عدة مواد دفعة وحدة — كل مادة بسطر أو مفصولة بفاصلة\nمثلاً:\nجغرافيا\nتاريخ, حاسوب"}
+          className="w-full rounded-xl border border-border bg-white px-3 py-2.5 text-sm outline-none focus:border-teal"
         />
         <button
           type="submit"
           disabled={busy}
-          className="whitespace-nowrap rounded-xl bg-teal px-5 py-2.5 text-sm font-medium text-white transition hover:bg-teal-dark disabled:opacity-60"
+          className="rounded-xl bg-teal px-5 py-2.5 text-sm font-medium text-white transition hover:bg-teal-dark disabled:opacity-60"
         >
-          {busy ? "…جارٍ" : "إضافة"}
+          {busy ? "…جارٍ" : "إضافة المواد"}
         </button>
       </form>
 
-      {err && (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-          {err}
+      {msg && (
+        <p
+          className={
+            "rounded-lg px-3 py-2 text-sm " +
+            (msg.ok ? "bg-teal-light text-teal-dark" : "bg-red-50 text-red-700")
+          }
+        >
+          {msg.text}
         </p>
       )}
 

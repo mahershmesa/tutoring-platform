@@ -50,9 +50,13 @@ export async function sendQuestion(
   return { ok: true, matched: count ?? 0 };
 }
 
+export type Attachment = { path: string; mime: string; name: string };
+
 export async function sendMessage(
   questionId: string,
+  recipientId: string,
   body: string,
+  attachment?: Attachment | null,
 ): Promise<QAState> {
   const supabase = createClient();
   if (!supabase) return { error: "اتصال Supabase غير مضبوط." };
@@ -62,11 +66,17 @@ export async function sendMessage(
   if (!user) return { error: "لازم تسجيل الدخول." };
 
   const clean = body.trim();
-  if (!clean) return { error: "اكتب رسالة." };
+  if (!clean && !attachment) return { error: "اكتب رسالة أو أرفق ملفاً." };
 
-  const { error } = await supabase
-    .from("messages")
-    .insert({ question_id: questionId, sender_id: user.id, body: clean });
+  const { error } = await supabase.from("messages").insert({
+    question_id: questionId,
+    sender_id: user.id,
+    recipient_id: recipientId,
+    body: clean,
+    attachment_path: attachment?.path ?? null,
+    attachment_mime: attachment?.mime ?? null,
+    attachment_name: attachment?.name ?? null,
+  });
   if (error) return { error: error.message };
 
   revalidatePath("/ask");

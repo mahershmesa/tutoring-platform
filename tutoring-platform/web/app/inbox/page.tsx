@@ -24,6 +24,9 @@ type MsgRow = {
   question_id: string;
   sender_id: string;
   body: string;
+  attachment_path: string | null;
+  attachment_mime: string | null;
+  attachment_name: string | null;
 };
 
 export default async function InboxPage() {
@@ -49,11 +52,26 @@ export default async function InboxPage() {
   if (qIds.length > 0) {
     const { data: mData } = await supabase
       .from("messages")
-      .select("id, question_id, sender_id, body")
+      .select(
+        "id, question_id, sender_id, body, attachment_path, attachment_mime, attachment_name",
+      )
       .in("question_id", qIds)
       .order("sent_at", { ascending: true });
     msgs = (mData as unknown as MsgRow[]) ?? [];
   }
+
+  // روابط موقّتة للمرفقات (RLS يقيّد الوصول لهذا المدرّس والطالب فقط)
+  const signed = new Map<string, string>();
+  await Promise.all(
+    msgs
+      .filter((m) => m.attachment_path)
+      .map(async (m) => {
+        const { data } = await supabase.storage
+          .from("message-attachments")
+          .createSignedUrl(m.attachment_path!, 3600);
+        if (data?.signedUrl) signed.set(m.attachment_path!, data.signedUrl);
+      }),
+  );
 
   const items: InboxItem[] = notifs.map((n) => {
     const q = n.questions;
@@ -62,11 +80,12 @@ export default async function InboxPage() {
       notificationId: n.id,
       status: n.status,
       questionId: n.question_id,
+      studentId,
       questionText: q?.question_text ?? "",
       subjectName: q?.subjects?.name ?? "—",
       stageName: q?.stages?.name ?? "—",
       govName: q?.governorates?.name ?? "—",
-      // عرض 1-إلى-1: رسائل الطالب + رسائلي فقط
+      // RLS يعيد فقط رسائل هذا المدرّس (مرسِلاً أو مستقبِلاً)
       messages: msgs
         .filter(
           (m) =>
@@ -77,6 +96,11 @@ export default async function InboxPage() {
           id: m.id,
           fromMe: m.sender_id === user.id,
           body: m.body,
+          attachmentUrl: m.attachment_path
+            ? signed.get(m.attachment_path) ?? null
+            : null,
+          attachmentMime: m.attachment_mime,
+          attachmentName: m.attachment_name,
         })),
     };
   });
@@ -89,7 +113,7 @@ export default async function InboxPage() {
           ← الرئيسية
         </Link>
       </header>
-      <InboxView items={items} />
+      <InboxView items={items} currentUserId={user.id} />
     </main>
   );
 }

@@ -73,6 +73,33 @@ export async function setSubjectActive(
   return { ok: true };
 }
 
+export async function addSubjects(
+  names: string[],
+): Promise<ActionState & { added?: number; skipped?: number }> {
+  const supabase = await adminClient();
+  if (!supabase) return { error: "غير مصرّح." };
+
+  const clean = Array.from(
+    new Set(names.map((n) => n.trim()).filter(Boolean)),
+  );
+  if (clean.length === 0)
+    return { error: "اكتب اسم مادة واحدة على الأقل." };
+
+  const { data, error } = await supabase
+    .from("subjects")
+    .upsert(clean.map((name) => ({ name })), {
+      onConflict: "name",
+      ignoreDuplicates: true,
+    })
+    .select("id");
+  if (error) return { error: error.message };
+
+  const added = data?.length ?? 0;
+  revalidatePath("/admin/subjects");
+  revalidatePath("/");
+  return { ok: true, added, skipped: clean.length - added };
+}
+
 // ---------- الإعلانات ----------
 
 export async function addAd(

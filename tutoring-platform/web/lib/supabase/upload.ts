@@ -70,3 +70,34 @@ export async function uploadPublicMedia(
   const { data } = supabase.storage.from("ads").getPublicUrl(path);
   return data.publicUrl;
 }
+
+/**
+ * يرفع مرفق رسالة إلى bucket خاص بالمسار <question_id>/<teacher_id>/...
+ * حيث teacher_id هو المدرّس طرف المحادثة. سياسات RLS تضمن أن يصله فقط
+ * الطالب صاحب السؤال والمدرّس صاحب المجلد. يرجّع المسار + النوع + الاسم الأصلي.
+ */
+export async function uploadMessageAttachment(
+  questionId: string,
+  teacherId: string,
+  file: File,
+): Promise<{ path: string; mime: string; name: string }> {
+  const supabase = createClient();
+  const isImage =
+    file.type.startsWith("image/") && file.type !== "image/gif";
+  const toUpload = isImage
+    ? await compressImage(file, { maxDim: 1600, quality: 0.8 })
+    : file;
+
+  const rawExt = toUpload.name.includes(".")
+    ? toUpload.name.split(".").pop()!
+    : "bin";
+  const ext = rawExt.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8) || "bin";
+  const path = `${questionId}/${teacherId}/att-${Date.now()}.${ext}`;
+
+  const { error } = await supabase.storage
+    .from("message-attachments")
+    .upload(path, toUpload, { cacheControl: "3600", upsert: false });
+  if (error) throw new Error("فشل رفع المرفق: " + error.message);
+
+  return { path, mime: toUpload.type || file.type, name: file.name };
+}

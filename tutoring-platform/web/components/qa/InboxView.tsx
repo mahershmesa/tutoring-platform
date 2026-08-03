@@ -3,16 +3,19 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { sendMessage, markNotificationRead } from "@/lib/qa/actions";
+import { uploadMessageAttachment } from "@/lib/supabase/upload";
+import MessageBubble, { type MessageVM } from "@/components/qa/MessageBubble";
 
 export type InboxItem = {
   notificationId: string;
   status: "sent" | "read" | "answered";
   questionId: string;
+  studentId: string;
   questionText: string;
   subjectName: string;
   stageName: string;
   govName: string;
-  messages: { id: string; fromMe: boolean; body: string }[];
+  messages: MessageVM[];
 };
 
 const statusBadge = {
@@ -21,7 +24,13 @@ const statusBadge = {
   answered: { text: "تم الرد ✓", cls: "bg-teal-light text-teal-dark" },
 } as const;
 
-export default function InboxView({ items }: { items: InboxItem[] }) {
+export default function InboxView({
+  items,
+  currentUserId,
+}: {
+  items: InboxItem[];
+  currentUserId: string;
+}) {
   if (items.length === 0) {
     return (
       <p className="rounded-2xl border border-border bg-white p-6 text-center text-sm text-ink-soft">
@@ -33,17 +42,20 @@ export default function InboxView({ items }: { items: InboxItem[] }) {
   return (
     <div className="space-y-3">
       {items.map((it) => (
-        <InboxThread key={it.notificationId} it={it} />
+        <InboxThread key={it.notificationId} it={it} teacherId={currentUserId} />
       ))}
     </div>
   );
 }
 
-function InboxThread({ it }: { it: InboxItem }) {
+function InboxThread({ it, teacherId }: { it: InboxItem; teacherId: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [reply, setReply] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [fileKey, setFileKey] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
   const badge = statusBadge[it.status];
 
   async function toggle() {
@@ -57,12 +69,29 @@ function InboxThread({ it }: { it: InboxItem }) {
 
   async function onReply(e: React.FormEvent) {
     e.preventDefault();
-    if (!reply.trim()) return;
+    if (!reply.trim() && !file) return;
     setBusy(true);
-    await sendMessage(it.questionId, reply);
-    setReply("");
-    setBusy(false);
-    router.refresh();
+    setErr(null);
+    try {
+      let attachment = null;
+      if (file) {
+        // المرفق يُرفع لمجلد هذا المدرّس (teacherId) داخل مجلد السؤال
+        attachment = await uploadMessageAttachment(it.questionId, teacherId, file);
+      }
+      // المستقبِل هو الطالب صاحب السؤال
+      const res = await sendMessage(it.questionId, it.studentId, reply, attachment);
+      if (res.error) setErr(res.error);
+      else {
+        setReply("");
+        setFile(null);
+        setFileKey((k) => k + 1);
+        router.refresh();
+      }
+    } catch (e2) {
+      setErr(e2 instanceof Error ? e2.message : "صار خطأ.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -86,33 +115,39 @@ function InboxThread({ it }: { it: InboxItem }) {
           {it.messages.length > 0 && (
             <div className="mb-3 space-y-1.5">
               {it.messages.map((m) => (
-                <div
-                  key={m.id}
-                  className={
-                    "max-w-[85%] rounded-lg px-3 py-1.5 text-sm " +
-                    (m.fromMe
-                      ? "ml-auto bg-teal-light text-ink"
-                      : "bg-surface text-ink")
-                  }
-                >
-                  {m.body}
-                </div>
+                <MessageBubble key={m.id} m={m} />
               ))}
             </div>
           )}
-          <form onSubmit={onReply} className="flex gap-2">
+          {err && (
+            <p className="mb-2 rounded-lg bg-red-50 px-2 py-1 text-xs text-red-700">
+              {err}
+            </p>
+          )}
+          {file && <p className="mb-2 text-xs text-ink-soft">📎 {file.name}</p>}
+          <form onSubmit={onReply} className="flex items-center gap-2">
             <input
               value={reply}
               onChange={(e) => setReply(e.target.value)}
               placeholder="اكتب ردّك على الطالب…"
               className="flex-1 rounded-lg border border-border bg-white px-3 py-1.5 text-sm outline-none focus:border-teal"
             />
+            <label className="cursor-pointer rounded-lg border border-border px-2 py-1.5 text-ink-soft hover:border-teal" title="إرفاق ملف أو صورة">
+              📎
+              <input
+                key={fileKey}
+                type="file"
+                accept="image/*,application/pdf"
+                className="hidden"
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              />
+            </label>
             <button
               type="submit"
               disabled={busy}
               className="rounded-lg bg-teal px-4 py-1.5 text-sm font-medium text-white hover:bg-teal-dark disabled:opacity-60"
             >
-              رد
+              {busy ? "…" : "رد"}
             </button>
           </form>
         </div>
