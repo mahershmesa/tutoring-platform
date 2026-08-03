@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Logo from "@/components/Logo";
 
 export default function AuthLayout({
   children,
@@ -7,12 +7,9 @@ export default function AuthLayout({
 }) {
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-10">
-      <Link
-        href="/"
-        className="mb-6 text-center text-2xl font-bold text-teal-dark"
-      >
-        دليلي
-      </Link>
+      <div className="mb-6 text-center">
+        <Logo size="lg" />
+      </div>
       <div className="rounded-2xl border border-border bg-white p-6 shadow-sm">
         {children}
       </div>

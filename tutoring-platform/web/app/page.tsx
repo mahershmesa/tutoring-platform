@@ -1,5 +1,7 @@
 import HomeView from "@/components/HomeView";
 import AuthNav from "@/components/AuthNav";
+import Logo from "@/components/Logo";
+import NewsFab from "@/components/content/NewsFab";
 import AdsCarousel, { type PublicAd } from "@/components/content/AdsCarousel";
 import NewsSection, { type PublicNews } from "@/components/content/NewsSection";
 import { createClient } from "@/lib/supabase/server";
@@ -51,8 +53,8 @@ export default async function HomePage() {
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-5 px-4 py-6">
       <header className="flex items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-teal-dark">دليلي</h1>
+        <div className="space-y-1.5">
+          <Logo />
           <p className="text-sm text-ink-soft">
             ابحث عن مدرّس موثّق قريب منك حسب المادة والمحافظة
           </p>
@@ -72,6 +74,8 @@ export default async function HomePage() {
       <HomeView subjects={subjects} teachers={teachers} />
 
       <NewsSection news={news} />
+
+      {news.length > 0 && <NewsFab />}
     </main>
   );
 }

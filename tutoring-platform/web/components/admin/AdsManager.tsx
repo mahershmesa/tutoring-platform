@@ -72,6 +72,10 @@ export default function AdsManager({ ads }: { ads: AdminAd[] }) {
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             className="w-full text-sm text-ink-soft file:mr-3 file:rounded-lg file:border-0 file:bg-teal-light file:px-3 file:py-1.5 file:text-teal-dark"
           />
+          <p className="text-xs text-ink-soft">
+            الأبعاد الموصى بها: ١٦٠٠×٦٠٠ بكسل تقريباً (بانر عريض). أي حجم يُضغط
+            ويُصغّر تلقائياً.
+          </p>
         </div>
         <div className="grid grid-cols-3 gap-2">
           <input

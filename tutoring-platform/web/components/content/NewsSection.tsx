@@ -9,7 +9,7 @@ export default function NewsSection({ news }: { news: PublicNews[] }) {
   if (news.length === 0) return null;
 
   return (
-    <section className="space-y-3">
+    <section id="news-section" className="scroll-mt-4 space-y-3">
       <h2 className="text-lg font-bold text-ink">الأخبار</h2>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {news.map((n) => (

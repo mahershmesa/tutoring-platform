@@ -70,6 +70,9 @@ export default function NewsManager({ news }: { news: AdminNews[] }) {
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             className="w-full text-sm text-ink-soft file:mr-3 file:rounded-lg file:border-0 file:bg-teal-light file:px-3 file:py-1.5 file:text-teal-dark"
           />
+          <p className="text-xs text-ink-soft">
+            الأبعاد الموصى بها: ١٢٠٠×٨٠٠ بكسل تقريباً. أي حجم يُضغط تلقائياً.
+          </p>
         </div>
         {err && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{err}</p>}
         <button
