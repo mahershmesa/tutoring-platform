@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { Governorate, Stage, Subject } from "@/lib/supabase/types";
 import { uploadFile } from "@/lib/supabase/upload";
 import { saveTeacherProfile } from "@/lib/profile/actions";
+import StatusToast from "./StatusToast";
 
 const inputClass =
   "w-full rounded-xl border border-border bg-white px-3 py-2.5 text-sm outline-none focus:border-teal";
@@ -118,7 +119,11 @@ export default function TeacherProfileForm({
       if (result.error) setMsg({ text: result.error });
       else {
         setMsg({ ok: true, text: "تم الحفظ بنجاح." });
-        router.refresh();
+        // اعرض التأكيد لحظة ثم حدّث البيانات من الخادم وأخفِ الرسالة
+        setTimeout(() => {
+          setMsg(null);
+          router.refresh();
+        }, 2500);
       }
     } catch (err) {
       setMsg({ text: err instanceof Error ? err.message : "صار خطأ." });
@@ -135,16 +140,7 @@ export default function TeacherProfileForm({
         <VerificationBadge status={initial.verification_status} />
       </div>
 
-      {msg && (
-        <p
-          className={
-            "rounded-xl px-3 py-2 text-sm " +
-            (msg.ok ? "bg-teal-light text-teal-dark" : "bg-red-50 text-red-700")
-          }
-        >
-          {msg.text}
-        </p>
-      )}
+      <StatusToast status={msg} />
 
       <div className="space-y-1">
         <label className="text-sm text-ink-soft">الاسم الكامل</label>
@@ -306,7 +302,7 @@ export default function TeacherProfileForm({
         disabled={saving}
         className="w-full rounded-xl bg-teal px-4 py-2.5 font-medium text-white transition hover:bg-teal-dark disabled:opacity-60"
       >
-        {saving ? "…جارٍ الحفظ" : "حفظ"}
+        {saving ? "جاري الحفظ..." : "حفظ"}
       </button>
     </form>
   );
