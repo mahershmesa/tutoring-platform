@@ -21,13 +21,16 @@ export default function LoginForm() {
       )}
 
       <div className="space-y-1">
-        <label className="text-sm text-ink-soft">البريد الإلكتروني</label>
+        <label className="text-sm text-ink-soft">رقم الهاتف</label>
         <input
-          name="email"
-          type="email"
-          autoComplete="email"
+          name="identifier"
+          type="text"
+          inputMode="tel"
+          autoComplete="username"
+          placeholder="07701234567"
+          dir="ltr"
           required
-          className={inputClass}
+          className={inputClass + " text-right"}
         />
       </div>
 

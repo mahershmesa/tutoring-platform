@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { compressImage } from "@/lib/images/compress";
 
 export type Bucket = "avatars" | "id-documents";
 
@@ -16,12 +17,20 @@ export async function uploadFile(
 ): Promise<{ path: string; publicUrl?: string }> {
   const supabase = createClient();
 
-  const rawExt = file.name.includes(".") ? file.name.split(".").pop()! : "bin";
+  // نضغط الصورة الشخصية فقط. إثبات الهوية يُترك كما هو (قد يكون PDF ويجب أن يبقى واضحاً).
+  const toUpload =
+    bucket === "avatars"
+      ? await compressImage(file, { maxDim: 512, quality: 0.8 })
+      : file;
+
+  const rawExt = toUpload.name.includes(".")
+    ? toUpload.name.split(".").pop()!
+    : "bin";
   const ext = rawExt.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8) || "bin";
   const kind = bucket === "avatars" ? "photo" : "id-document";
   const path = `${userId}/${kind}-${Date.now()}.${ext}`;
 
-  const { error } = await supabase.storage.from(bucket).upload(path, file, {
+  const { error } = await supabase.storage.from(bucket).upload(path, toUpload, {
     cacheControl: "3600",
     upsert: false,
   });
@@ -44,11 +53,15 @@ export async function uploadPublicMedia(
   file: File,
 ): Promise<string> {
   const supabase = createClient();
-  const rawExt = file.name.includes(".") ? file.name.split(".").pop()! : "bin";
+  // ضغط وتصغير لأقصى عرض 1600px للإعلانات والأخبار
+  const toUpload = await compressImage(file, { maxDim: 1600, quality: 0.8 });
+  const rawExt = toUpload.name.includes(".")
+    ? toUpload.name.split(".").pop()!
+    : "bin";
   const ext = rawExt.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8) || "bin";
   const path = `${kind}-${Date.now()}.${ext}`;
 
-  const { error } = await supabase.storage.from("ads").upload(path, file, {
+  const { error } = await supabase.storage.from("ads").upload(path, toUpload, {
     cacheControl: "3600",
     upsert: false,
   });

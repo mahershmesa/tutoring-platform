@@ -79,6 +79,7 @@ export async function addAd(
   imageUrl: string,
   caption: string,
   sortOrder: number,
+  contactInfo: string,
 ): Promise<ActionState> {
   const supabase = await adminClient();
   if (!supabase) return { error: "غير مصرّح." };
@@ -88,6 +89,7 @@ export async function addAd(
     image_url: imageUrl,
     caption: caption.trim() || null,
     sort_order: Number.isFinite(sortOrder) ? sortOrder : 0,
+    contact_info: contactInfo.trim() || null,
   });
   if (error) return { error: error.message };
 

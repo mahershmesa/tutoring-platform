@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { normalizePhone, isValidPhone, phoneToEmail } from "@/lib/auth/phone";
 
 export type AuthState = { error?: string };
 
@@ -9,16 +10,22 @@ export type AuthState = { error?: string };
 function authError(message: string): string {
   const m = message.toLowerCase();
   if (m.includes("invalid login credentials"))
-    return "البريد أو كلمة المرور غير صحيحة.";
+    return "رقم الهاتف أو كلمة المرور غير صحيحة.";
   if (m.includes("already registered") || m.includes("already been registered"))
-    return "هذا البريد مسجّل مسبقاً — جرّب تسجيل الدخول.";
+    return "هذا الرقم مسجّل مسبقاً — جرّب تسجيل الدخول.";
   if (m.includes("password should be at least"))
     return "كلمة المرور قصيرة جداً (٦ أحرف على الأقل).";
-  if (m.includes("unable to validate email") || m.includes("invalid email"))
-    return "صيغة البريد غير صحيحة.";
-  if (m.includes("email not confirmed"))
-    return "لازم تأكيد البريد أولاً قبل الدخول.";
   return "صار خطأ غير متوقع. حاول مرة ثانية.";
+}
+
+// يحوّل ما أدخله المستخدم إلى بريد صالح لمصادقة Supabase:
+// - إن احتوى "@" فهو بريد فعلي (خيار احتياطي للأدمن).
+// - وإلا فهو رقم هاتف → بريد صناعي.
+function toAuthEmail(identifier: string): string | null {
+  if (identifier.includes("@")) return identifier;
+  const phone = normalizePhone(identifier);
+  if (!isValidPhone(phone)) return null;
+  return phoneToEmail(phone);
 }
 
 export async function login(
@@ -28,9 +35,13 @@ export async function login(
   const supabase = createClient();
   if (!supabase) return { error: "اتصال Supabase غير مضبوط." };
 
-  const email = String(formData.get("email") ?? "").trim();
+  const identifier = String(formData.get("identifier") ?? "").trim();
   const password = String(formData.get("password") ?? "");
-  if (!email || !password) return { error: "عبّي البريد وكلمة المرور." };
+  if (!identifier || !password)
+    return { error: "عبّي رقم الهاتف وكلمة المرور." };
+
+  const email = toAuthEmail(identifier);
+  if (!email) return { error: "رقم الهاتف غير صحيح." };
 
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { error: authError(error.message) };
@@ -45,30 +56,29 @@ export async function signup(
   const supabase = createClient();
   if (!supabase) return { error: "اتصال Supabase غير مضبوط." };
 
-  const email = String(formData.get("email") ?? "").trim();
+  const phoneRaw = String(formData.get("phone") ?? "");
   const password = String(formData.get("password") ?? "");
   const fullName = String(formData.get("full_name") ?? "").trim();
 
-  // حاجز أمان: نقبل student أو teacher فقط — لا admin إطلاقاً.
-  // (التريغر في القاعدة يفرض نفس القاعدة كطبقة ثانية.)
-  const role = String(formData.get("role") ?? "student") === "teacher"
-    ? "teacher"
-    : "student";
+  // حاجز أمان: student أو teacher فقط — لا admin (والقاعدة تفرض نفس الشيء).
+  const role =
+    String(formData.get("role") ?? "student") === "teacher"
+      ? "teacher"
+      : "student";
 
   if (!fullName) return { error: "اكتب اسمك." };
-  if (!email || !password) return { error: "عبّي البريد وكلمة المرور." };
-  if (password.length < 6)
-    return { error: "كلمة المرور ٦ أحرف على الأقل." };
+
+  const phone = normalizePhone(phoneRaw);
+  if (!isValidPhone(phone)) return { error: "رقم هاتف غير صحيح (مثال: 07701234567)." };
+  if (password.length < 6) return { error: "كلمة المرور ٦ أحرف على الأقل." };
 
   const { error } = await supabase.auth.signUp({
-    email,
+    email: phoneToEmail(phone),
     password,
-    options: { data: { role, full_name: fullName } },
+    options: { data: { role, full_name: fullName, phone } },
   });
   if (error) return { error: authError(error.message) };
 
-  // مع تعطيل تأكيد البريد: signUp يُنشئ الجلسة مباشرةً.
-  // مع تفعيله: تُنشأ الجلسة بعد ضغط رابط التأكيد (لا يضر التوجيه هنا).
   redirect("/");
 }
 

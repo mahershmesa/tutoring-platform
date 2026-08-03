@@ -51,13 +51,16 @@ export default function RegisterForm() {
       </div>
 
       <div className="space-y-1">
-        <label className="text-sm text-ink-soft">البريد الإلكتروني</label>
+        <label className="text-sm text-ink-soft">رقم الهاتف</label>
         <input
-          name="email"
-          type="email"
-          autoComplete="email"
+          name="phone"
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel"
+          placeholder="07701234567"
+          dir="ltr"
           required
-          className={inputClass}
+          className={inputClass + " text-right"}
         />
       </div>
 

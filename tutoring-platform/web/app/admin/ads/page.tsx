@@ -7,7 +7,7 @@ export default async function AdminAdsPage() {
   const { supabase } = await requireAdmin();
   const { data } = await supabase
     .from("ads")
-    .select("id, image_url, caption, sort_order, active")
+    .select("id, image_url, caption, sort_order, active, contact_info")
     .order("sort_order", { ascending: true });
 
   return (

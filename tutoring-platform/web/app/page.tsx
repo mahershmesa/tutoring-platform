@@ -26,7 +26,7 @@ async function getData(): Promise<{
     supabase.rpc("map_teachers", {}),
     supabase
       .from("ads")
-      .select("id, image_url, caption")
+      .select("id, image_url, caption, contact_info")
       .eq("active", true)
       .order("sort_order", { ascending: true }),
     supabase

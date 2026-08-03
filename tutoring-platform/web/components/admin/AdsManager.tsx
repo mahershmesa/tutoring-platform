@@ -11,12 +11,14 @@ export type AdminAd = {
   caption: string | null;
   sort_order: number;
   active: boolean;
+  contact_info: string | null;
 };
 
 export default function AdsManager({ ads }: { ads: AdminAd[] }) {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [caption, setCaption] = useState("");
+  const [contactInfo, setContactInfo] = useState("");
   const [sortOrder, setSortOrder] = useState("0");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -32,11 +34,12 @@ export default function AdsManager({ ads }: { ads: AdminAd[] }) {
     setBusy(true);
     try {
       const imageUrl = await uploadPublicMedia("ad", file);
-      const res = await addAd(imageUrl, caption, Number(sortOrder));
+      const res = await addAd(imageUrl, caption, Number(sortOrder), contactInfo);
       if (res.error) setErr(res.error);
       else {
         setFile(null);
         setCaption("");
+        setContactInfo("");
         setSortOrder("0");
         setFileKey((k) => k + 1);
         router.refresh();
@@ -86,6 +89,12 @@ export default function AdsManager({ ads }: { ads: AdminAd[] }) {
             className="rounded-xl border border-border px-3 py-2 text-sm outline-none focus:border-teal"
           />
         </div>
+        <input
+          value={contactInfo}
+          onChange={(e) => setContactInfo(e.target.value)}
+          placeholder="معلومات تواصل (رقم هاتف أو نص) — تظهر عند الضغط على الإعلان"
+          className="w-full rounded-xl border border-border px-3 py-2 text-sm outline-none focus:border-teal"
+        />
         {err && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{err}</p>}
         <button
           type="submit"
@@ -103,6 +112,9 @@ export default function AdsManager({ ads }: { ads: AdminAd[] }) {
             <img src={ad.image_url} alt={ad.caption ?? ""} className="h-32 w-full object-cover" />
             <div className="space-y-2 p-3">
               <p className="text-sm text-ink">{ad.caption || "—"}</p>
+              {ad.contact_info && (
+                <p className="text-xs text-teal-dark">📞 {ad.contact_info}</p>
+              )}
               <p className="text-xs text-ink-soft">الترتيب: {ad.sort_order}</p>
               <div className="flex gap-2">
                 <button
