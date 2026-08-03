@@ -35,7 +35,12 @@ export default async function AuthNav() {
 
   return (
     <div className="flex items-center gap-3 text-sm">
-      <span className="text-ink-soft">{name}</span>
+      <Link
+        href="/profile"
+        className="font-medium text-teal-dark hover:underline"
+      >
+        {name}
+      </Link>
       <form action={signout}>
         <button className="rounded-xl border border-border px-3 py-1.5 text-ink-soft hover:border-teal">
           خروج

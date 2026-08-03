@@ -6,6 +6,16 @@ export type Subject = {
   name: string;
 };
 
+export type Governorate = {
+  id: number;
+  name: string;
+};
+
+export type Stage = {
+  id: number;
+  name: string;
+};
+
 // صف يرجع من map_teachers() — نقاط الخريطة
 export type MapTeacher = {
   user_id: string;
