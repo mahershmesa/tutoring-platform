@@ -42,7 +42,8 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // كل المسارات ما عدا الملفات الثابتة والصور
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // كل المسارات ما عدا الملفات الثابتة والصور وأصول الـ PWA
+    // (manifest و service worker والأيقونات يجب أن تُخدَّم بلا معالجة مصادقة)
+    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|icons/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };
