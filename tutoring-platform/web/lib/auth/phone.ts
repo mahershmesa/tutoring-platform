@@ -15,6 +15,8 @@ export function isValidPhone(canonical: string): boolean {
   return /^964\d{9,10}$/.test(canonical);
 }
 
+// نطاق عادي مقبول من Supabase (نتجنّب النطاقات المحجوزة مثل .local).
+// لا يُرسَل أي بريد فعلاً — هو معرّف داخلي فقط.
 export function phoneToEmail(canonicalPhone: string): string {
-  return `p${canonicalPhone}@phone.dalili.local`;
+  return `p${canonicalPhone}@dalili.app`;
 }

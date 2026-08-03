@@ -11,11 +11,20 @@ function authError(message: string): string {
   const m = message.toLowerCase();
   if (m.includes("invalid login credentials"))
     return "رقم الهاتف أو كلمة المرور غير صحيحة.";
-  if (m.includes("already registered") || m.includes("already been registered"))
+  if (
+    m.includes("already registered") ||
+    m.includes("already been registered") ||
+    m.includes("user already exists")
+  )
     return "هذا الرقم مسجّل مسبقاً — جرّب تسجيل الدخول.";
-  if (m.includes("password should be at least"))
+  if (m.includes("password should be at least") || m.includes("password"))
     return "كلمة المرور قصيرة جداً (٦ أحرف على الأقل).";
-  return "صار خطأ غير متوقع. حاول مرة ثانية.";
+  if (m.includes("email") && (m.includes("invalid") || m.includes("valid")))
+    return "تعذّر إنشاء الحساب — صيغة الحساب الداخلي مرفوضة من الخادم.";
+  if (m.includes("signups not allowed") || m.includes("signup is disabled"))
+    return "التسجيل معطّل حالياً من إعدادات Supabase.";
+  // احتياطي: نعرض رسالة Supabase الحقيقية للتشخيص بدل إخفائها.
+  return "تعذّر: " + message;
 }
 
 // يحوّل ما أدخله المستخدم إلى بريد صالح لمصادقة Supabase:
