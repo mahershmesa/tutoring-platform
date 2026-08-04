@@ -69,10 +69,26 @@ export default function TeacherMap({ teachers }: { teachers: MapTeacher[] }) {
         <Marker key={t.user_id} position={pos} icon={teacherIcon}>
           <Popup>
             <div className="space-y-1 text-right" dir="rtl">
-              <p className="text-sm font-bold text-ink">{t.full_name}</p>
-              <p className="text-xs text-ink-soft">
-                {t.subjects.join("، ") || "—"} · {t.governorate_name}
-              </p>
+              <div className="flex items-center gap-2">
+                {t.photo_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={t.photo_url}
+                    alt={t.full_name}
+                    className="h-10 w-10 shrink-0 rounded-full border border-border object-cover"
+                  />
+                ) : (
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-teal text-sm font-bold text-white">
+                    {t.full_name?.trim().charAt(0) || "؟"}
+                  </span>
+                )}
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-ink">{t.full_name}</p>
+                  <p className="text-xs text-ink-soft">
+                    {t.subjects.join("، ") || "—"} · {t.governorate_name}
+                  </p>
+                </div>
+              </div>
               <p className="flex items-center gap-1 text-xs text-teal-dark">
                 <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
                 أجاب على {t.answered_count} طالب
