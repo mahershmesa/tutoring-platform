@@ -47,6 +47,12 @@ export default function LoginForm() {
 
       <SubmitButton>دخول</SubmitButton>
 
+      <p className="text-center text-sm">
+        <Link href="/reset" className="text-teal-dark hover:underline">
+          نسيت كلمة المرور؟
+        </Link>
+      </p>
+
       <p className="text-center text-sm text-ink-soft">
         ما عندك حساب؟{" "}
         <Link href="/register" className="text-teal-dark hover:underline">

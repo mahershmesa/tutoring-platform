@@ -8,6 +8,8 @@ import { normalizePhone, isValidPhone, phoneToEmail } from "@/lib/auth/phone";
 import { authError } from "@/lib/auth/errors";
 import { uploadFile } from "@/lib/supabase/upload";
 import { saveStudentProfile, saveTeacherProfile } from "@/lib/profile/actions";
+import { saveSecurityCredential } from "@/lib/account/actions";
+import { SECURITY_QUESTIONS } from "@/lib/auth/security-questions";
 import type { Governorate, Stage, Subject } from "@/lib/supabase/types";
 
 const input =
@@ -37,6 +39,8 @@ export default function RegisterWizard({
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [securityQuestion, setSecurityQuestion] = useState(SECURITY_QUESTIONS[0]);
+  const [securityAnswer, setSecurityAnswer] = useState("");
   // common
   const [govId, setGovId] = useState<number | null>(null);
   // student
@@ -69,6 +73,8 @@ export default function RegisterWizard({
       if (!isValidPhone(normalizePhone(phone)))
         return "رقم هاتف غير صحيح (مثال: 07701234567).";
       if (password.length < 8) return "كلمة المرور ٨ أحرف على الأقل.";
+      if (!securityAnswer.trim())
+        return "اكتب جواب سؤال الأمان (لاسترجاع حسابك لو نسيت كلمة المرور).";
     }
     if (step === 3) {
       if (!govId) return "اختر محافظتك.";
@@ -162,6 +168,8 @@ export default function RegisterWizard({
           return;
         }
       }
+      // سؤال الأمان (best-effort — الحساب أُنشئ؛ يمكن ضبطه لاحقاً من البروفايل)
+      await saveSecurityCredential(securityQuestion, securityAnswer);
       router.push("/");
       router.refresh();
     } catch (e) {
@@ -229,6 +237,16 @@ export default function RegisterWizard({
             <label className="text-sm text-ink-soft">كلمة المرور</label>
             <input className={input} type="password" minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} />
             <p className="text-xs text-ink-soft">٨ أحرف على الأقل</p>
+          </div>
+          <div className="space-y-1 border-t border-border pt-3">
+            <label className="text-sm text-ink-soft">سؤال الأمان (لاسترجاع حسابك)</label>
+            <select className={input} value={securityQuestion} onChange={(e) => setSecurityQuestion(e.target.value)}>
+              {SECURITY_QUESTIONS.map((q) => (
+                <option key={q} value={q}>{q}</option>
+              ))}
+            </select>
+            <input className={input} placeholder="جوابك" value={securityAnswer} onChange={(e) => setSecurityAnswer(e.target.value)} />
+            <p className="text-xs text-ink-soft">احفظ جوابك جيداً — بدونه لا يمكن استرجاع الحساب تلقائياً.</p>
           </div>
         </div>
       )}

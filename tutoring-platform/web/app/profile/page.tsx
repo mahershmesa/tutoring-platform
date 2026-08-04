@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import type { Governorate, Stage, Subject } from "@/lib/supabase/types";
 import StudentProfileForm from "@/components/profile/StudentProfileForm";
 import TeacherProfileForm from "@/components/profile/TeacherProfileForm";
+import SecurityQuestionCard from "@/components/account/SecurityQuestionCard";
+import DeactivateCard from "@/components/account/DeactivateCard";
 
 export const metadata: Metadata = { title: "بروفايلي — دليلي" };
 export const dynamic = "force-dynamic";
@@ -42,6 +44,17 @@ export default async function ProfilePage() {
   const stageList = (stages as Stage[]) ?? [];
   const subjectList = (subjects as Subject[]) ?? [];
 
+  // حالة الحساب: سؤال الأمان + التعطيل
+  const [{ data: hasCred }, { data: statusRow }] = await Promise.all([
+    supabase.rpc("has_security_credential"),
+    supabase
+      .from("account_status")
+      .select("deactivated")
+      .eq("user_id", user.id)
+      .maybeSingle(),
+  ]);
+  const deactivated = Boolean(statusRow?.deactivated);
+
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-5 px-4 py-6">
       <header className="flex items-center justify-between">
@@ -69,6 +82,9 @@ export default async function ProfilePage() {
           />
         )}
       </div>
+
+      <SecurityQuestionCard hasCredential={Boolean(hasCred)} />
+      <DeactivateCard deactivated={deactivated} />
     </main>
   );
 }
