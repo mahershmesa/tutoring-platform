@@ -6,6 +6,7 @@ import type { Governorate, Stage, Subject } from "@/lib/supabase/types";
 import StudentProfileForm from "@/components/profile/StudentProfileForm";
 import TeacherProfileForm from "@/components/profile/TeacherProfileForm";
 import SecurityQuestionCard from "@/components/account/SecurityQuestionCard";
+import NotificationsCard from "@/components/account/NotificationsCard";
 import DeactivateCard from "@/components/account/DeactivateCard";
 
 export const metadata: Metadata = { title: "بروفايلي — دليلي" };
@@ -84,6 +85,7 @@ export default async function ProfilePage() {
       </div>
 
       <SecurityQuestionCard hasCredential={Boolean(hasCred)} />
+      <NotificationsCard />
       <DeactivateCard deactivated={deactivated} />
     </main>
   );
