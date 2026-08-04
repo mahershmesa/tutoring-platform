@@ -53,6 +53,7 @@ export default function RegisterWizard({
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [idDocFile, setIdDocFile] = useState<File | null>(null);
   const [locationVisible, setLocationVisible] = useState(false);
+  const [agreed, setAgreed] = useState(false);
 
   const totalSteps = role === "teacher" ? 4 : 3;
 
@@ -95,6 +96,10 @@ export default function RegisterWizard({
   }
 
   async function finish() {
+    if (!agreed) {
+      setErr("يجب الموافقة على سياسة الخصوصية وشروط الاستخدام.");
+      return;
+    }
     setBusy(true);
     setErr(null);
     try {
@@ -306,6 +311,29 @@ export default function RegisterWizard({
             <input type="checkbox" checked={locationVisible} onChange={(e) => setLocationVisible(e.target.checked)} className="h-5 w-5 accent-teal" />
           </label>
         </div>
+      )}
+
+      {/* موافقة الخصوصية — على الخطوة الأخيرة */}
+      {step === totalSteps && (
+        <label className="flex items-start gap-2 pt-1 text-sm text-ink-soft">
+          <input
+            type="checkbox"
+            checked={agreed}
+            onChange={(e) => setAgreed(e.target.checked)}
+            className="mt-0.5 h-4 w-4 accent-teal"
+          />
+          <span>
+            أوافق على{" "}
+            <Link href="/privacy" target="_blank" className="text-teal-dark underline">
+              سياسة الخصوصية
+            </Link>{" "}
+            و{" "}
+            <Link href="/terms" target="_blank" className="text-teal-dark underline">
+              شروط الاستخدام
+            </Link>
+            .
+          </span>
+        </label>
       )}
 
       {/* أزرار التنقّل */}

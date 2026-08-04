@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { isAdmin } from "@/lib/admin/guard";
+import { normalizePhone, isValidPhone } from "@/lib/auth/phone";
 
 export type ActionState = { error?: string; ok?: boolean };
 
@@ -70,6 +71,86 @@ export async function setSubjectActive(
 
   revalidatePath("/admin/subjects");
   revalidatePath("/");
+  return { ok: true };
+}
+
+// ---------- إدارة المدراء (أخطر صلاحية) ----------
+
+// يبحث عن مستخدم برقم هاتفه (بدون منح أي صلاحية) — لعرض هويته في تأكيد الترقية.
+export async function findUserByPhone(
+  phoneRaw: string,
+): Promise<ActionState & { userId?: string; name?: string; already?: boolean }> {
+  const supabase = await adminClient();
+  if (!supabase) return { error: "غير مصرّح." };
+  const phone = normalizePhone(phoneRaw);
+  if (!isValidPhone(phone)) return { error: "رقم هاتف غير صحيح." };
+
+  let userId: string | undefined;
+  let name: string | undefined;
+  const { data: t } = await supabase
+    .from("teacher_profiles")
+    .select("user_id, full_name")
+    .eq("phone", phone)
+    .maybeSingle();
+  if (t) {
+    userId = t.user_id;
+    name = t.full_name;
+  } else {
+    const { data: s } = await supabase
+      .from("student_profiles")
+      .select("user_id, full_name")
+      .eq("phone", phone)
+      .maybeSingle();
+    if (s) {
+      userId = s.user_id;
+      name = s.full_name;
+    }
+  }
+  if (!userId) return { error: "لم يُعثر على مستخدم بهذا الرقم." };
+
+  const { data: role } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "admin")
+    .maybeSingle();
+
+  return { ok: true, userId, name: name ?? undefined, already: Boolean(role) };
+}
+
+export async function grantAdmin(userId: string): Promise<ActionState> {
+  const supabase = await adminClient();
+  if (!supabase) return { error: "غير مصرّح." };
+
+  const { error } = await supabase
+    .from("user_roles")
+    .insert({ user_id: userId, role: "admin" });
+  if (error) {
+    if (error.code === "23505") return { error: "هذا المستخدم أدمن مسبقاً." };
+    return { error: error.message };
+  }
+  revalidatePath("/admin/admins");
+  return { ok: true };
+}
+
+export async function revokeAdmin(userId: string): Promise<ActionState> {
+  const supabase = await adminClient();
+  if (!supabase) return { error: "غير مصرّح." };
+
+  // منع سحب الصلاحية عن النفس (تفادي الإغلاق الذاتي)
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user?.id === userId)
+    return { error: "لا يمكنك سحب صلاحيتك عن نفسك." };
+
+  const { error } = await supabase
+    .from("user_roles")
+    .delete()
+    .eq("user_id", userId)
+    .eq("role", "admin");
+  if (error) return { error: error.message };
+  revalidatePath("/admin/admins");
   return { ok: true };
 }
 

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import HomeView from "@/components/HomeView";
 import AuthNav from "@/components/AuthNav";
 import Logo from "@/components/Logo";
@@ -76,6 +77,16 @@ export default async function HomePage() {
       <NewsSection news={news} />
 
       {news.length > 0 && <NewsFab />}
+
+      <footer className="mt-4 border-t border-border pt-4 text-center text-xs text-ink-soft">
+        <Link href="/privacy" className="hover:text-teal-dark">
+          سياسة الخصوصية
+        </Link>
+        {" · "}
+        <Link href="/terms" className="hover:text-teal-dark">
+          شروط الاستخدام
+        </Link>
+      </footer>
     </main>
   );
 }
