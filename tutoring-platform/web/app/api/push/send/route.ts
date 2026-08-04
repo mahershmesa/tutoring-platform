@@ -13,7 +13,7 @@ type WebhookPayload = {
   record: Record<string, unknown> | null;
 };
 
-type PushMessage = { title: string; body: string; url: string };
+type PushMessage = { title: string; body: string; url: string; tag?: string };
 
 // يبني (المستخدم المستهدَف + نص الإشعار) حسب الجدول الذي أطلق الـ webhook.
 async function buildTarget(
@@ -46,6 +46,7 @@ async function buildTarget(
           ? `وصلك سؤال جديد بمادة ${subject}`
           : "وصلك سؤال جديد مطابق لتخصصك",
         url: "/inbox",
+        tag: questionId ? `q-${questionId}` : undefined,
       },
     };
   }
@@ -55,12 +56,14 @@ async function buildTarget(
     if (!recipientId) return null;
     const body = (rec.body as string | undefined)?.trim() ?? "";
     const snippet = body.length > 60 ? body.slice(0, 60) + "…" : body;
+    const questionId = rec.question_id as string | undefined;
     return {
       userId: recipientId,
       msg: {
         title: "رسالة جديدة",
         body: snippet || "وصلتك رسالة جديدة",
         url: "/inbox",
+        tag: questionId ? `m-${questionId}` : undefined,
       },
     };
   }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -16,6 +16,7 @@ import {
 import StatusToast from "@/components/profile/StatusToast";
 import MessageBubble, { type MessageVM } from "@/components/qa/MessageBubble";
 import AttachmentView from "@/components/qa/AttachmentView";
+import EnableNotificationsHint from "@/components/qa/EnableNotificationsHint";
 
 export type StudentTeacherThread = {
   teacherId: string;
@@ -70,6 +71,7 @@ export default function AskFlow({
   if (!subjectId) {
     return (
       <div className="space-y-3">
+        <EnableNotificationsHint />
         <p className="text-sm text-ink-soft">اختر المادة لتبدأ جلسة أسئلة:</p>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {subjects.map((s) => (
@@ -231,8 +233,37 @@ function TeacherThread({
   const [fileKey, setFileKey] = useState(0);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const confirmedRef = useRef(false);
 
   const hasTeacherReply = t.messages.some((m) => !m.fromMe);
+  const needsConfirm = hasTeacherReply && t.status !== "answered";
+
+  // تأكيد تلقائي: فور ما يشوف الطالب رد المدرّس (يدخل الخيط ضمن الشاشة)،
+  // يتأكد الاستلام مرة واحدة — بفعل الطالب وتحت جلسته (حارس القاعدة يضمن
+  // أن غير صاحب السؤال لا يقدر يطلق التأكيد).
+  useEffect(() => {
+    if (!needsConfirm) return;
+    const el = rootRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (
+            entry.isIntersecting &&
+            !confirmedRef.current
+          ) {
+            confirmedRef.current = true;
+            observer.disconnect();
+            confirmAnswer(questionId, t.teacherId).then(() => router.refresh());
+          }
+        }
+      },
+      { threshold: 0.4 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [needsConfirm, questionId, t.teacherId, router]);
 
   async function onReply(e: React.FormEvent) {
     e.preventDefault();
@@ -260,15 +291,8 @@ function TeacherThread({
     }
   }
 
-  async function onConfirm() {
-    setBusy(true);
-    await confirmAnswer(questionId, t.teacherId);
-    setBusy(false);
-    router.refresh();
-  }
-
   return (
-    <div className="rounded-xl border border-border bg-surface p-3">
+    <div ref={rootRef} className="rounded-xl border border-border bg-surface p-3">
       <div className="flex items-center justify-between">
         <span className="flex items-center gap-1.5 text-sm font-medium text-ink">
           <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
@@ -277,18 +301,8 @@ function TeacherThread({
             (أجاب على {t.answeredCount})
           </span>
         </span>
-        {t.status === "answered" ? (
+        {t.status === "answered" && (
           <span className="text-xs font-medium text-teal-dark">✓ مؤكّد</span>
-        ) : (
-          hasTeacherReply && (
-            <button
-              onClick={onConfirm}
-              disabled={busy}
-              className="rounded-lg bg-teal-light px-2.5 py-1 text-xs font-medium text-teal-dark hover:bg-teal hover:text-white disabled:opacity-60"
-            >
-              أكّد استلام الرد
-            </button>
-          )
         )}
       </div>
 

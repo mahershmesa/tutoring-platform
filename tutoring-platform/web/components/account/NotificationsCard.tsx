@@ -2,81 +2,35 @@
 
 import { useEffect, useState } from "react";
 import {
-  savePushSubscription,
-  removePushSubscription,
-  type PushSubJSON,
-} from "@/lib/push/actions";
-
-const VAPID_PUBLIC = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
-
-// تحويل مفتاح VAPID العام (base64url) إلى ArrayBuffer المطلوب في subscribe.
-function urlBase64ToBuffer(base64: string): ArrayBuffer {
-  const padding = "=".repeat((4 - (base64.length % 4)) % 4);
-  const b64 = (base64 + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const raw = atob(b64);
-  const buffer = new ArrayBuffer(raw.length);
-  const out = new Uint8Array(buffer);
-  for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
-  return buffer;
-}
-
-type Support =
-  | "checking"
-  | "ok" // مدعوم
-  | "unsupported" // متصفح لا يدعم Push
-  | "ios-not-installed"; // آيفون بدون تثبيت PWA
+  detectPushSupport,
+  isPushEnabled,
+  enablePush,
+  disablePush,
+  type PushSupport,
+} from "@/lib/push/subscribe";
 
 export default function NotificationsCard() {
-  const [support, setSupport] = useState<Support>("checking");
+  const [support, setSupport] = useState<PushSupport | "checking">("checking");
   const [enabled, setEnabled] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    const hasSW = "serviceWorker" in navigator;
-    const hasPush = "PushManager" in window;
-    if (!hasSW || !hasPush) {
-      // على iOS يظهر Push فقط بعد تثبيت التطبيق على الشاشة الرئيسية.
-      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-      const standalone =
-        window.matchMedia("(display-mode: standalone)").matches ||
-        // @ts-expect-error خاص بـ Safari على iOS
-        window.navigator.standalone === true;
-      setSupport(isIOS && !standalone ? "ios-not-installed" : "unsupported");
-      return;
-    }
-    setSupport("ok");
-    navigator.serviceWorker.ready
-      .then((reg) => reg.pushManager.getSubscription())
-      .then((sub) => setEnabled(Boolean(sub)))
-      .catch(() => {});
+    const s = detectPushSupport();
+    setSupport(s);
+    if (s === "ok") isPushEnabled().then(setEnabled);
   }, []);
 
   async function enable() {
     setBusy(true);
     setMsg(null);
     try {
-      if (!VAPID_PUBLIC) {
-        setMsg("مفتاح الإشعارات غير مضبوط على الخادم.");
-        return;
+      const res = await enablePush();
+      if (res.error) setMsg(res.error);
+      else {
+        setEnabled(true);
+        setMsg("تم تفعيل الإشعارات ✓");
       }
-      const perm = await Notification.requestPermission();
-      if (perm !== "granted") {
-        setMsg("لم تُمنح صلاحية الإشعارات.");
-        return;
-      }
-      const reg = await navigator.serviceWorker.ready;
-      const sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToBuffer(VAPID_PUBLIC),
-      });
-      const res = await savePushSubscription(sub.toJSON() as PushSubJSON);
-      if (res.error) {
-        setMsg(res.error);
-        return;
-      }
-      setEnabled(true);
-      setMsg("تم تفعيل الإشعارات ✓");
     } catch {
       setMsg("تعذّر تفعيل الإشعارات. حاول مجدداً.");
     } finally {
@@ -88,12 +42,7 @@ export default function NotificationsCard() {
     setBusy(true);
     setMsg(null);
     try {
-      const reg = await navigator.serviceWorker.ready;
-      const sub = await reg.pushManager.getSubscription();
-      if (sub) {
-        await removePushSubscription(sub.endpoint);
-        await sub.unsubscribe();
-      }
+      await disablePush();
       setEnabled(false);
       setMsg("تم إيقاف الإشعارات.");
     } catch {

@@ -53,6 +53,13 @@ self.addEventListener("push", (event) => {
     badge: "/icons/icon-192.png",
     dir: "rtl",
     lang: "ar",
+    // اهتزاز على الموبايل (أندرويد)
+    vibrate: [200, 100, 200],
+    // يبقى الإشعار ظاهراً حتى يتفاعل المستخدم (ديسكتوب/أندرويد) — متل تطبيق رسائل
+    requireInteraction: true,
+    // تجميع حسب المحادثة + إعادة التنبيه عند كل جديد ضمن نفس الخيط
+    tag: data.tag || undefined,
+    renotify: data.tag ? true : undefined,
     data: { url: data.url || "/inbox" },
   };
   event.waitUntil(self.registration.showNotification(title, options));
