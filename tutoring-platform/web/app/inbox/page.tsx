@@ -14,6 +14,9 @@ type NotifRow = {
   questions: {
     question_text: string;
     student_id: string;
+    attachment_path: string | null;
+    attachment_mime: string | null;
+    attachment_name: string | null;
     subjects: { name: string } | null;
     stages: { name: string } | null;
     governorates: { name: string } | null;
@@ -41,7 +44,7 @@ export default async function InboxPage() {
   const { data: nData } = await supabase
     .from("notifications")
     .select(
-      "id, status, question_id, questions(question_text, student_id, subjects(name), stages(name), governorates(name))",
+      "id, status, question_id, questions(question_text, student_id, attachment_path, attachment_mime, attachment_name, subjects(name), stages(name), governorates(name))",
     )
     .eq("teacher_id", user.id)
     .order("sent_at", { ascending: false });
@@ -73,6 +76,21 @@ export default async function InboxPage() {
       }),
   );
 
+  // روابط موقّتة لمرفقات الأسئلة
+  const qSigned = new Map<string, string>();
+  await Promise.all(
+    notifs
+      .filter((n) => n.questions?.attachment_path)
+      .map(async (n) => {
+        const p = n.questions!.attachment_path!;
+        if (qSigned.has(p)) return;
+        const { data } = await supabase.storage
+          .from("question-attachments")
+          .createSignedUrl(p, 3600);
+        if (data?.signedUrl) qSigned.set(p, data.signedUrl);
+      }),
+  );
+
   const items: InboxItem[] = notifs.map((n) => {
     const q = n.questions;
     const studentId = q?.student_id ?? "";
@@ -85,6 +103,11 @@ export default async function InboxPage() {
       subjectName: q?.subjects?.name ?? "—",
       stageName: q?.stages?.name ?? "—",
       govName: q?.governorates?.name ?? "—",
+      attachmentUrl: q?.attachment_path
+        ? qSigned.get(q.attachment_path) ?? null
+        : null,
+      attachmentMime: q?.attachment_mime ?? null,
+      attachmentName: q?.attachment_name ?? null,
       // RLS يعيد فقط رسائل هذا المدرّس (مرسِلاً أو مستقبِلاً)
       messages: msgs
         .filter(

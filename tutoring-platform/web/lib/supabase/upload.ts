@@ -129,3 +129,34 @@ export async function uploadMessageAttachment(
 
   return { path, mime: toUpload.type || file.type, name: file.name };
 }
+
+/**
+ * يرفع مرفق السؤال إلى bucket خاص بالمسار <question_id>/...
+ * (يُبَثّ لكل المدرّسين المطابقين — نفس نطاق رؤية السؤال). يجب أن يوجد السؤال
+ * أولاً (RLS يتحقق من ملكيته). يرجّع المسار + النوع + الاسم الأصلي.
+ */
+export async function uploadQuestionAttachment(
+  questionId: string,
+  file: File,
+): Promise<{ path: string; mime: string; name: string }> {
+  const supabase = createClient();
+  checkSize(file, 10);
+  const isImage =
+    file.type.startsWith("image/") && file.type !== "image/gif";
+  const toUpload = isImage
+    ? await compressImage(file, { maxDim: 1600, quality: 0.8 })
+    : file;
+
+  const rawExt = toUpload.name.includes(".")
+    ? toUpload.name.split(".").pop()!
+    : "bin";
+  const ext = rawExt.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8) || "bin";
+  const path = `${questionId}/att-${Date.now()}.${ext}`;
+
+  const { error } = await supabase.storage
+    .from("question-attachments")
+    .upload(path, toUpload, { cacheControl: "3600", upsert: false });
+  if (error) throw new Error(uploadErrorMessage(error.message, 10));
+
+  return { path, mime: toUpload.type || file.type, name: file.name };
+}

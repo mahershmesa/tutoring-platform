@@ -55,10 +55,19 @@ export default async function AskPage() {
 
   const { data: qData } = await supabase
     .from("questions")
-    .select("id, subject_id, question_text, created_at")
+    .select(
+      "id, subject_id, question_text, created_at, attachment_path, attachment_mime, attachment_name",
+    )
     .eq("student_id", user.id)
     .order("created_at", { ascending: false });
-  const questionRows = qData ?? [];
+  const questionRows = (qData ?? []) as {
+    id: string;
+    subject_id: string;
+    question_text: string;
+    attachment_path: string | null;
+    attachment_mime: string | null;
+    attachment_name: string | null;
+  }[];
   const qIds = questionRows.map((q) => q.id);
 
   let notifs: NotifRow[] = [];
@@ -83,7 +92,7 @@ export default async function AskPage() {
     msgs = (m.data as unknown as MsgRow[]) ?? [];
   }
 
-  // روابط موقّتة للمرفقات (RLS يضمن وصول الطرفين فقط)
+  // روابط موقّتة لمرفقات الرسائل (RLS يضمن وصول الطرفين فقط)
   const signed = new Map<string, string>();
   await Promise.all(
     msgs
@@ -93,6 +102,19 @@ export default async function AskPage() {
           .from("message-attachments")
           .createSignedUrl(m.attachment_path!, 3600);
         if (data?.signedUrl) signed.set(m.attachment_path!, data.signedUrl);
+      }),
+  );
+
+  // روابط موقّتة لمرفقات الأسئلة
+  const qSigned = new Map<string, string>();
+  await Promise.all(
+    questionRows
+      .filter((q) => q.attachment_path)
+      .map(async (q) => {
+        const { data } = await supabase.storage
+          .from("question-attachments")
+          .createSignedUrl(q.attachment_path!, 3600);
+        if (data?.signedUrl) qSigned.set(q.attachment_path!, data.signedUrl);
       }),
   );
 
@@ -126,6 +148,11 @@ export default async function AskPage() {
       id: q.id,
       subjectId: q.subject_id,
       questionText: q.question_text,
+      attachmentUrl: q.attachment_path
+        ? qSigned.get(q.attachment_path) ?? null
+        : null,
+      attachmentMime: q.attachment_mime,
+      attachmentName: q.attachment_name,
       teachers,
     };
   });

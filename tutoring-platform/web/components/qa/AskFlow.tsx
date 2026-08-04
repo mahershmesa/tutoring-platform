@@ -3,10 +3,19 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { sendQuestion, sendMessage, confirmAnswer } from "@/lib/qa/actions";
-import { uploadMessageAttachment } from "@/lib/supabase/upload";
+import {
+  sendQuestion,
+  sendMessage,
+  confirmAnswer,
+  setQuestionAttachment,
+} from "@/lib/qa/actions";
+import {
+  uploadMessageAttachment,
+  uploadQuestionAttachment,
+} from "@/lib/supabase/upload";
 import StatusToast from "@/components/profile/StatusToast";
 import MessageBubble, { type MessageVM } from "@/components/qa/MessageBubble";
+import AttachmentView from "@/components/qa/AttachmentView";
 
 export type StudentTeacherThread = {
   teacherId: string;
@@ -19,6 +28,9 @@ export type StudentQuestionVM = {
   id: string;
   subjectId: string;
   questionText: string;
+  attachmentUrl: string | null;
+  attachmentMime: string | null;
+  attachmentName: string | null;
   teachers: StudentTeacherThread[];
 };
 export type SubjectVM = { id: string; name: string };
@@ -37,6 +49,8 @@ export default function AskFlow({
   const router = useRouter();
   const [subjectId, setSubjectId] = useState<string | null>(null);
   const [text, setText] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [fileKey, setFileKey] = useState(0);
   const [sending, setSending] = useState(false);
   const [toast, setToast] = useState<Toast>(null);
 
@@ -82,20 +96,33 @@ export default function AskFlow({
 
   async function onSend(e: React.FormEvent) {
     e.preventDefault();
-    if (!text.trim()) return;
+    if (!text.trim() && !file) return;
     setSending(true);
     setToast(null);
-    const res = await sendQuestion(subjectId!, text);
-    setSending(false);
-    if (res.error) setToast({ text: res.error });
-    else {
+    try {
+      const res = await sendQuestion(subjectId!, text);
+      if (res.error) {
+        setToast({ text: res.error });
+        return;
+      }
+      // المرفق يُرفع بعد إنشاء السؤال (RLS يحتاج وجود السؤال)
+      if (file && res.questionId) {
+        const att = await uploadQuestionAttachment(res.questionId, file);
+        await setQuestionAttachment(res.questionId, att);
+      }
       setText("");
+      setFile(null);
+      setFileKey((k) => k + 1);
       setToast({
         ok: true,
         text: `تم إرسال سؤالك لـ ${res.matched ?? 0} مدرّس مطابق.`,
       });
       setTimeout(() => setToast(null), 3000);
       router.refresh();
+    } catch (e2) {
+      setToast({ text: e2 instanceof Error ? e2.message : "صار خطأ." });
+    } finally {
+      setSending(false);
     }
   }
 
@@ -124,13 +151,28 @@ export default function AskFlow({
           placeholder="اكتب سؤالك بهذه المادة…"
           className="w-full rounded-xl border border-border bg-white px-3 py-2.5 text-sm outline-none focus:border-teal"
         />
-        <button
-          type="submit"
-          disabled={sending}
-          className="rounded-xl bg-teal px-5 py-2 text-sm font-medium text-white transition hover:bg-teal-dark disabled:opacity-60"
-        >
-          {sending ? "…جارٍ الإرسال" : "إرسال السؤال"}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="submit"
+            disabled={sending}
+            className="rounded-xl bg-teal px-5 py-2 text-sm font-medium text-white transition hover:bg-teal-dark disabled:opacity-60"
+          >
+            {sending ? "…جارٍ الإرسال" : "إرسال السؤال"}
+          </button>
+          <label className="cursor-pointer rounded-xl border border-border px-3 py-2 text-sm text-ink-soft hover:border-teal" title="إرفاق ملف أو صورة مع السؤال">
+            📎 إرفاق
+            <input
+              key={fileKey}
+              type="file"
+              accept="image/*,application/pdf"
+              className="hidden"
+              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            />
+          </label>
+          {file && (
+            <span className="truncate text-xs text-ink-soft">{file.name}</span>
+          )}
+        </div>
       </form>
 
       {/* أسئلة هذه الجلسة/المادة مع ردود المدرّسين */}
@@ -146,6 +188,15 @@ export default function AskFlow({
             className="rounded-2xl border border-border bg-white p-4 shadow-sm"
           >
             <p className="font-medium text-ink">{q.questionText}</p>
+            {q.attachmentUrl && (
+              <div className="mt-2">
+                <AttachmentView
+                  url={q.attachmentUrl}
+                  mime={q.attachmentMime}
+                  name={q.attachmentName}
+                />
+              </div>
+            )}
             {q.teachers.length === 0 ? (
               <p className="mt-2 text-xs text-ink-soft">
                 ما في مدرّس مطابق حالياً لهذا السؤال.

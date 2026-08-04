@@ -3,7 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
-export type QAState = { error?: string; ok?: boolean; matched?: number };
+export type QAState = {
+  error?: string;
+  ok?: boolean;
+  matched?: number;
+  questionId?: string;
+};
 
 export async function sendQuestion(
   subjectId: string,
@@ -47,7 +52,35 @@ export async function sendQuestion(
     .eq("question_id", q.id);
 
   revalidatePath("/ask");
-  return { ok: true, matched: count ?? 0 };
+  return { ok: true, matched: count ?? 0, questionId: q.id };
+}
+
+// يربط مرفقاً بسؤال أُنشئ للتو (المرفق رُفع بعد إنشاء السؤال).
+export async function setQuestionAttachment(
+  questionId: string,
+  attachment: Attachment,
+): Promise<QAState> {
+  const supabase = createClient();
+  if (!supabase) return { error: "اتصال Supabase غير مضبوط." };
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "لازم تسجيل الدخول." };
+
+  const { error } = await supabase
+    .from("questions")
+    .update({
+      attachment_path: attachment.path,
+      attachment_mime: attachment.mime,
+      attachment_name: attachment.name,
+    })
+    .eq("id", questionId)
+    .eq("student_id", user.id);
+  if (error) return { error: error.message };
+
+  revalidatePath("/ask");
+  revalidatePath("/inbox");
+  return { ok: true };
 }
 
 export type Attachment = { path: string; mime: string; name: string };

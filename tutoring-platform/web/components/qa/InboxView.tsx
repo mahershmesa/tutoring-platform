@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { sendMessage, markNotificationRead } from "@/lib/qa/actions";
 import { uploadMessageAttachment } from "@/lib/supabase/upload";
 import MessageBubble, { type MessageVM } from "@/components/qa/MessageBubble";
+import AttachmentView from "@/components/qa/AttachmentView";
 
 export type InboxItem = {
   notificationId: string;
@@ -15,6 +16,9 @@ export type InboxItem = {
   subjectName: string;
   stageName: string;
   govName: string;
+  attachmentUrl: string | null;
+  attachmentMime: string | null;
+  attachmentName: string | null;
   messages: MessageVM[];
 };
 
@@ -112,6 +116,16 @@ function InboxThread({ it, teacherId }: { it: InboxItem; teacherId: string }) {
 
       {open && (
         <div className="mt-3 border-t border-border pt-3">
+          {it.attachmentUrl && (
+            <div className="mb-3">
+              <p className="mb-1 text-xs text-ink-soft">مرفق السؤال:</p>
+              <AttachmentView
+                url={it.attachmentUrl}
+                mime={it.attachmentMime}
+                name={it.attachmentName}
+              />
+            </div>
+          )}
           {it.messages.length > 0 && (
             <div className="mb-3 space-y-1.5">
               {it.messages.map((m) => (
