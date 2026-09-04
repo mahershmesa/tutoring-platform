@@ -34,8 +34,24 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  // لمس getUser() يجدّد الجلسة عند الحاجة.
-  await supabase.auth.getUser();
+  // لمس getUser() يجدّد الجلسة عند الحاجة — لكن بمهلة قصوى (أفضل-جهد).
+  // لو تأخّرت Supabase أو تعذّر الوصول إليها، لا نحجب الطلب: نمرّره بدل أن
+  // يتعلّق الـ middleware حتى يقتله Vercel فيسقط الموقع كاملاً (504).
+  const userPromise = supabase.auth.getUser();
+  userPromise.catch(() => {}); // تفادي unhandled rejection لو فشل لاحقاً
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await Promise.race([
+      userPromise,
+      new Promise<void>((resolve) => {
+        timer = setTimeout(resolve, 3000);
+      }),
+    ]);
+  } catch {
+    // نتجاهل: تدوير الجلسة أفضل-جهد ولا يجب أن يمنع تحميل الصفحة
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
 
   return response;
 }
