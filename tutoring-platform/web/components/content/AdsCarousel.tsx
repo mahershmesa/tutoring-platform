@@ -28,20 +28,31 @@ export default function AdsCarousel({ ads }: { ads: PublicAd[] }) {
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-white shadow-sm">
-      <div className="relative">
+      <div className="relative h-40 w-full sm:h-48">
+        {/* كل الشرائح مكدّسة ومحمّلة مسبقاً → التبديل فوري (بلا إعادة تحميل) */}
+        {ads.map((a, idx) => (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            key={a.id}
+            src={a.image_url}
+            alt={a.caption ?? "إعلان"}
+            loading={idx === 0 ? "eager" : "lazy"}
+            decoding="async"
+            className={
+              "absolute inset-0 h-full w-full object-cover transition-opacity duration-500 " +
+              (idx === i ? "opacity-100" : "opacity-0")
+            }
+          />
+        ))}
         <button
           type="button"
           onClick={() => clickable && setOpenAd(ad)}
-          className={"block w-full " + (clickable ? "cursor-pointer" : "cursor-default")}
+          className={
+            "absolute inset-0 block w-full " +
+            (clickable ? "cursor-pointer" : "cursor-default")
+          }
           aria-label={clickable ? "عرض معلومات التواصل" : undefined}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={ad.image_url}
-            alt={ad.caption ?? "إعلان"}
-            className="h-40 w-full object-cover sm:h-48"
-          />
-        </button>
+        />
         {ads.length > 1 && (
           <div className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center gap-1.5">
             {ads.map((a, idx) => (

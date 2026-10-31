@@ -5,6 +5,7 @@ import Logo from "@/components/Logo";
 import NewsFab from "@/components/content/NewsFab";
 import AdsCarousel, { type PublicAd } from "@/components/content/AdsCarousel";
 import NewsSection, { type PublicNews } from "@/components/content/NewsSection";
+import InstallSection from "@/components/content/InstallSection";
 import { createClient } from "@/lib/supabase/server";
 import type { MapTeacher, Subject } from "@/lib/supabase/types";
 
@@ -77,6 +78,8 @@ export default async function HomePage() {
       <NewsSection news={news} />
 
       {news.length > 0 && <NewsFab />}
+
+      <InstallSection />
 
       <footer className="mt-4 border-t border-border pt-4 text-center text-xs text-ink-soft">
         <Link href="/privacy" className="hover:text-teal-dark">

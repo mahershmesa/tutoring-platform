@@ -22,6 +22,8 @@ export default function NewsSection({ news }: { news: PublicNews[] }) {
               <img
                 src={n.image_url}
                 alt=""
+                loading="lazy"
+                decoding="async"
                 className="h-36 w-full object-cover"
               />
             )}

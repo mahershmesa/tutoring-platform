@@ -81,7 +81,8 @@ export async function uploadPublicMedia(
   const supabase = createClient();
   checkSize(file, 5);
   // ضغط وتصغير لأقصى عرض 1600px للإعلانات والأخبار
-  const toUpload = await compressImage(file, { maxDim: 1600, quality: 0.8 });
+  // 1200px يكفي لعرض البنر/الأخبار بوضوح مع حجم أصغر (تحميل أسرع).
+  const toUpload = await compressImage(file, { maxDim: 1200, quality: 0.78 });
   const rawExt = toUpload.name.includes(".")
     ? toUpload.name.split(".").pop()!
     : "bin";
