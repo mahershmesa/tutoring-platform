@@ -122,11 +122,16 @@ export async function markNotificationRead(
 ): Promise<QAState> {
   const supabase = createClient();
   if (!supabase) return { error: "اتصال Supabase غير مضبوط." };
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "لازم تسجيل الدخول." };
 
   const { error } = await supabase
     .from("notifications")
     .update({ status: "read" })
     .eq("id", notificationId)
+    .eq("teacher_id", user.id) // فقط المدرّس المستهدَف (دفاع بالعمق فوق RLS)
     .eq("status", "sent"); // لا نتراجع عن answered
   if (error) return { error: error.message };
 
@@ -140,6 +145,18 @@ export async function confirmAnswer(
 ): Promise<QAState> {
   const supabase = createClient();
   if (!supabase) return { error: "اتصال Supabase غير مضبوط." };
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "لازم تسجيل الدخول." };
+
+  // دفاع بالعمق فوق RLS/الحارس: تأكّد أن المستخدم هو صاحب السؤال فعلاً.
+  const { data: q } = await supabase
+    .from("questions")
+    .select("student_id")
+    .eq("id", questionId)
+    .maybeSingle();
+  if (!q || q.student_id !== user.id) return { error: "غير مصرّح." };
 
   // الطالب صاحب السؤال يضبط الإشعار answered → تريغر يزيد عدّاد المدرّس مرّة.
   const { error } = await supabase

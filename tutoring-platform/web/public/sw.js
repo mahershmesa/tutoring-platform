@@ -68,7 +68,9 @@ self.addEventListener("push", (event) => {
 // الضغط على الإشعار: نركّز نافذة مفتوحة أو نفتح الرابط.
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const target = (event.notification.data && event.notification.data.url) || "/inbox";
+  // أمان: لا نسمح إلا بمسارات داخلية نسبية (منع إعادة توجيه خارجية)
+  let target = (event.notification.data && event.notification.data.url) || "/inbox";
+  if (typeof target !== "string" || !target.startsWith("/")) target = "/inbox";
   event.waitUntil(
     self.clients
       .matchAll({ type: "window", includeUncontrolled: true })
