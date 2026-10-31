@@ -12,9 +12,9 @@ const iconCls = "h-6 w-6";
 
 const items: Item[] = [
   {
-    href: "/",
+    href: "/ask",
     label: "الأقسام",
-    match: (p) => p === "/",
+    match: (p) => p.startsWith("/ask"),
     icon: (
       <svg viewBox="0 0 24 24" fill="none" className={iconCls} stroke="currentColor" strokeWidth="1.8">
         <rect x="3" y="3" width="7" height="7" rx="1.5" />
