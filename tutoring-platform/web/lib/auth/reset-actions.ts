@@ -7,8 +7,8 @@ import { SECURITY_QUESTIONS } from "@/lib/auth/security-questions";
 
 type Admin = NonNullable<ReturnType<typeof createAdminClient>>;
 
-function clientIp(): string {
-  const h = headers();
+async function clientIp(): Promise<string> {
+  const h = await headers(); // Next 15: headers() صارت async
   const xff = h.get("x-forwarded-for");
   return xff?.split(",")[0]?.trim() || h.get("x-real-ip") || "unknown";
 }
@@ -16,7 +16,7 @@ function clientIp(): string {
 // حدّ معدّل لكل IP (يفشل مغلقاً عند الخطأ).
 async function withinRate(admin: Admin): Promise<boolean> {
   const { data, error } = await admin.rpc("check_reset_rate_limit", {
-    p_ip: clientIp(),
+    p_ip: await clientIp(),
   });
   if (error) return false;
   return data === true;

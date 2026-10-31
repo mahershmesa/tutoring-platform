@@ -18,17 +18,18 @@ export function createClient() {
     return null;
   }
 
-  const cookieStore = cookies();
-
+  // Next 15: cookies() صارت async — نستدعيها بتكاسل داخل المعالجات
+  // (async) حتى تبقى createClient متزامنة ولا نغيّر مواضع الاستدعاء.
   return createServerClient(url, key, {
     cookies: {
-      getAll() {
-        return cookieStore.getAll();
+      async getAll() {
+        return (await cookies()).getAll();
       },
-      setAll(cookiesToSet: CookieToSet[]) {
+      async setAll(cookiesToSet: CookieToSet[]) {
         try {
+          const store = await cookies();
           cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options),
+            store.set(name, value, options),
           );
         } catch {
           // يُستدعى set من Server Component — يتكفّل middleware بتحديث الجلسة.
