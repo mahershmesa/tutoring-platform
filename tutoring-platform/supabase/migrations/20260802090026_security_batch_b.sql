@@ -66,6 +66,7 @@ begin
 end;
 $$;
 
+drop trigger if exists trg_message_integrity on public.messages;
 create trigger trg_message_integrity
   before insert on public.messages
   for each row execute function public.enforce_message_integrity();
@@ -103,6 +104,7 @@ end;
 $$;
 
 -- يعمل قبل تريغر حدّ المعدّل والتوزيع (الاسم أسبق أبجدياً).
+drop trigger if exists trg_aa_question_integrity on public.questions;
 create trigger trg_aa_question_integrity
   before insert on public.questions
   for each row execute function public.enforce_question_integrity();

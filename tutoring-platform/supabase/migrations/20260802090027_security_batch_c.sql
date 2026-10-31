@@ -28,6 +28,7 @@ begin
 end;
 $$;
 
+drop trigger if exists trg_guard_notification_keys on public.notifications;
 create trigger trg_guard_notification_keys
   before update on public.notifications
   for each row execute function public.guard_notification_keys();
