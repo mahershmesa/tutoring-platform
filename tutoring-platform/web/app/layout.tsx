@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Cairo } from "next/font/google";
 import "./globals.css";
 import PWARegister from "@/components/PWARegister";
+import BottomNav from "@/components/BottomNav";
 
 const cairo = Cairo({
   subsets: ["arabic", "latin"],
@@ -41,6 +42,7 @@ export default function RootLayout({
     <html lang="ar" dir="rtl" className={cairo.variable}>
       <body className="min-h-screen bg-surface font-sans text-ink antialiased">
         {children}
+        <BottomNav />
         <PWARegister />
       </body>
     </html>

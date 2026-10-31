@@ -15,7 +15,7 @@ export default function NewsFab() {
     <button
       onClick={goToNews}
       aria-label="اذهب إلى الأخبار"
-      className="fixed bottom-16 right-5 z-[900] flex items-center gap-1.5 rounded-full bg-amber px-4 py-2.5 text-sm font-bold text-white shadow-lg transition hover:brightness-105"
+      className="fixed bottom-20 right-5 z-[900] flex items-center gap-1.5 rounded-full bg-amber px-4 py-2.5 text-sm font-bold text-white shadow-lg transition hover:brightness-105"
     >
       الأخبار
       <svg
