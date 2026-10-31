@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { timingSafeEqual } from "crypto";
 import webpush from "web-push";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -15,19 +16,34 @@ type WebhookPayload = {
 
 type PushMessage = { title: string; body: string; url: string; tag?: string };
 
-// يبني (المستخدم المستهدَف + نص الإشعار) حسب الجدول الذي أطلق الـ webhook.
+// مقارنة ثابتة الزمن للسرّ (تمنع التسريب عبر توقيت المقارنة).
+function safeEqual(a: string, b: string): boolean {
+  const ab = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ab.length !== bb.length) return false;
+  return timingSafeEqual(ab, bb);
+}
+
+// يبني (المستخدم المستهدَف + نص الإشعار). لا نثق بحمولة الـ webhook:
+// نعيد جلب الصف من القاعدة بمعرّفه ونبني الإشعار من بيانات موثوقة فقط.
 async function buildTarget(
   admin: NonNullable<ReturnType<typeof createAdminClient>>,
   payload: WebhookPayload,
 ): Promise<{ userId: string; msg: PushMessage } | null> {
-  const rec = payload.record ?? {};
+  const id = (payload.record ?? {}).id as string | undefined;
+  if (!id) return null;
 
   if (payload.table === "notifications") {
-    const teacherId = rec.teacher_id as string | undefined;
-    const questionId = rec.question_id as string | undefined;
+    const { data: n } = await admin
+      .from("notifications")
+      .select("teacher_id, question_id")
+      .eq("id", id)
+      .maybeSingle();
+    const teacherId = n?.teacher_id as string | undefined;
+    const questionId = n?.question_id as string | undefined;
     if (!teacherId) return null;
 
-    // نجيب اسم المادة لإثراء نص الإشعار (اختياري — نتحمّل فشله).
+    // اسم المادة لإثراء النص (اختياري — نتحمّل فشله).
     let subject = "";
     if (questionId) {
       const { data: q } = await admin
@@ -52,11 +68,16 @@ async function buildTarget(
   }
 
   if (payload.table === "messages") {
-    const recipientId = rec.recipient_id as string | undefined;
+    const { data: m } = await admin
+      .from("messages")
+      .select("recipient_id, body, question_id")
+      .eq("id", id)
+      .maybeSingle();
+    const recipientId = m?.recipient_id as string | undefined;
     if (!recipientId) return null;
-    const body = (rec.body as string | undefined)?.trim() ?? "";
+    const body = ((m?.body as string | undefined) ?? "").trim();
     const snippet = body.length > 60 ? body.slice(0, 60) + "…" : body;
-    const questionId = rec.question_id as string | undefined;
+    const questionId = m?.question_id as string | undefined;
     return {
       userId: recipientId,
       msg: {
@@ -72,9 +93,10 @@ async function buildTarget(
 }
 
 export async function POST(req: Request) {
-  // التحقّق من سرّ الـ webhook حتى لا يستدعي أحدٌ هذا المسار.
+  // التحقّق من سرّ الـ webhook (مقارنة ثابتة الزمن) حتى لا يستدعي أحدٌ المسار.
   const secret = process.env.PUSH_WEBHOOK_SECRET;
-  if (!secret || req.headers.get("x-webhook-secret") !== secret) {
+  const provided = req.headers.get("x-webhook-secret") ?? "";
+  if (!secret || !safeEqual(provided, secret)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
