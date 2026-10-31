@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 export type PublicNews = {
   id: string;
   image_url: string | null;
@@ -18,14 +20,16 @@ export default function NewsSection({ news }: { news: PublicNews[] }) {
             className="overflow-hidden rounded-2xl border border-border bg-white shadow-sm"
           >
             {n.image_url && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={n.image_url}
-                alt=""
-                loading="lazy"
-                decoding="async"
-                className="h-36 w-full object-cover"
-              />
+              <div className="relative h-36 w-full">
+                <Image
+                  src={n.image_url}
+                  alt=""
+                  fill
+                  loading="lazy"
+                  sizes="(max-width: 640px) 100vw, 370px"
+                  className="object-cover"
+                />
+              </div>
             )}
             <div className="p-3">
               <p className="text-sm text-ink">{n.caption}</p>

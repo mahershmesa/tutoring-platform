@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 export type PublicAd = {
   id: string;
@@ -29,17 +30,18 @@ export default function AdsCarousel({ ads }: { ads: PublicAd[] }) {
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-white shadow-sm">
       <div className="relative h-40 w-full sm:h-48">
-        {/* كل الشرائح مكدّسة ومحمّلة مسبقاً → التبديل فوري (بلا إعادة تحميل) */}
+        {/* شرائح مكدّسة محسّنة عبر next/image (تصغير تلقائي على CDN).
+            الأولى priority (عنصر LCP)، والباقي يُحمّل بتكاسل — تبديل سلس بالتلاشي. */}
         {ads.map((a, idx) => (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             key={a.id}
             src={a.image_url}
             alt={a.caption ?? "إعلان"}
-            loading={idx === 0 ? "eager" : "lazy"}
-            decoding="async"
+            fill
+            priority={idx === 0}
+            sizes="(max-width: 768px) 100vw, 768px"
             className={
-              "absolute inset-0 h-full w-full object-cover transition-opacity duration-500 " +
+              "object-cover transition-opacity duration-500 " +
               (idx === i ? "opacity-100" : "opacity-0")
             }
           />
