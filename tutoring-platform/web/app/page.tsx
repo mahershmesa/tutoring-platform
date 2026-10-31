@@ -6,6 +6,7 @@ import NewsFab from "@/components/content/NewsFab";
 import AdsCarousel, { type PublicAd } from "@/components/content/AdsCarousel";
 import NewsSection, { type PublicNews } from "@/components/content/NewsSection";
 import InstallSection from "@/components/content/InstallSection";
+import InstallBanner from "@/components/content/InstallBanner";
 import { createClient } from "@/lib/supabase/server";
 import type { MapTeacher, Subject } from "@/lib/supabase/types";
 
@@ -63,6 +64,8 @@ export default async function HomePage() {
         </div>
         <AuthNav />
       </header>
+
+      <InstallBanner />
 
       {!connected && (
         <div className="rounded-xl border border-amber bg-amber-light px-4 py-3 text-sm text-ink">

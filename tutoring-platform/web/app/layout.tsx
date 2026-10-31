@@ -3,6 +3,7 @@ import { Cairo } from "next/font/google";
 import "./globals.css";
 import PWARegister from "@/components/PWARegister";
 import BottomNav from "@/components/BottomNav";
+import SplashFader from "@/components/SplashFader";
 
 const cairo = Cairo({
   subsets: ["arabic", "latin"],
@@ -41,6 +42,11 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl" className={cairo.variable}>
       <body className="min-h-screen bg-surface font-sans text-ink antialiased">
+        {/* شاشة البداية — مُقدَّمة من الخادم فتظهر فوراً (تمنع الشاشة السوداء) */}
+        <div id="dalili-splash">
+          <span className="brand">دليلي</span>
+        </div>
+        <SplashFader />
         {children}
         <BottomNav />
         <PWARegister />

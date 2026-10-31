@@ -36,3 +36,53 @@
   border: 3px solid #fff;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
 }
+
+/* ===== منع وميض الشاشة السوداء عند الفتح ===== */
+html { background-color: #f7f9fa; }
+
+/* ===== شاشة البداية (Splash) ===== */
+#dalili-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(130% 130% at 50% 25%, #21c0b8 0%, #1aa6a0 55%, #158b86 100%);
+  transition: opacity 0.55s ease;
+}
+#dalili-splash.hide {
+  opacity: 0;
+  pointer-events: none;
+}
+#dalili-splash .brand {
+  font-weight: 800;
+  font-size: clamp(2.5rem, 12vw, 3.5rem);
+  color: #fff;
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 18px rgba(255, 255, 255, 0.5), 0 0 42px rgba(255, 255, 255, 0.28);
+  animation: dalili-splash-pulse 1.6s ease-in-out infinite;
+}
+@keyframes dalili-splash-pulse {
+  0%, 100% { transform: scale(1);    opacity: 0.9; }
+  50%      { transform: scale(1.06); opacity: 1;   }
+}
+
+/* ===== مؤشّر التحميل بين الصفحات ===== */
+.dalili-loader {
+  display: flex;
+  min-height: 60vh;
+  align-items: center;
+  justify-content: center;
+}
+.dalili-spinner {
+  width: 42px;
+  height: 42px;
+  border-radius: 9999px;
+  border: 4px solid #cfe9e7;
+  border-top-color: #1aa6a0;
+  animation: dalili-spin 0.7s linear infinite;
+}
+@keyframes dalili-spin {
+  to { transform: rotate(360deg); }
+}
