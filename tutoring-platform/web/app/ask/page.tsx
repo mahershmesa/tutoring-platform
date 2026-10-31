@@ -118,6 +118,19 @@ export default async function AskPage() {
       }),
   );
 
+  // تقييمات الطالب الحالية (لملء ويدجت التقييم مسبقاً)
+  const { data: ratingRows } = await supabase
+    .from("teacher_ratings")
+    .select("teacher_id, rating, comment")
+    .eq("student_id", user.id);
+  const myRatings = new Map<string, { rating: number; comment: string | null }>();
+  (ratingRows ?? []).forEach((r) =>
+    myRatings.set(r.teacher_id as string, {
+      rating: r.rating as number,
+      comment: (r.comment as string | null) ?? null,
+    }),
+  );
+
   const questions: StudentQuestionVM[] = questionRows.map((q) => {
     const qNotifs = notifs.filter((n) => n.question_id === q.id);
     const teachers = qNotifs.map((n) => ({
@@ -125,6 +138,8 @@ export default async function AskPage() {
       teacherName: n.teacher_profiles?.full_name ?? "مدرّس",
       answeredCount: n.teacher_profiles?.answered_count ?? 0,
       status: n.status,
+      myRating: myRatings.get(n.teacher_id)?.rating ?? null,
+      myComment: myRatings.get(n.teacher_id)?.comment ?? null,
       // محادثة 1-إلى-1 فعلية: بين الطالب وهذا المدرّس تحديداً
       messages: msgs
         .filter(

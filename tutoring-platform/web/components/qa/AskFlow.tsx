@@ -7,6 +7,7 @@ import {
   sendQuestion,
   sendMessage,
   confirmAnswer,
+  rateTeacher,
   setQuestionAttachment,
 } from "@/lib/qa/actions";
 import {
@@ -24,6 +25,8 @@ export type StudentTeacherThread = {
   answeredCount: number;
   status: "sent" | "read" | "answered";
   messages: MessageVM[];
+  myRating: number | null;
+  myComment: string | null;
 };
 export type StudentQuestionVM = {
   id: string;
@@ -235,9 +238,26 @@ function TeacherThread({
   const [err, setErr] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const confirmedRef = useRef(false);
+  const [stars, setStars] = useState<number>(t.myRating ?? 0);
+  const [ratingComment, setRatingComment] = useState<string>(t.myComment ?? "");
+  const [ratingBusy, setRatingBusy] = useState(false);
+  const [ratingSaved, setRatingSaved] = useState<boolean>(t.myRating != null);
 
   const hasTeacherReply = t.messages.some((m) => !m.fromMe);
   const needsConfirm = hasTeacherReply && t.status !== "answered";
+
+  async function submitRating() {
+    if (stars < 1) return;
+    setRatingBusy(true);
+    const res = await rateTeacher(t.teacherId, stars, ratingComment);
+    setRatingBusy(false);
+    if (!res.error) {
+      setRatingSaved(true);
+      router.refresh();
+    } else {
+      setErr(res.error);
+    }
+  }
 
   // تأكيد تلقائي: فور ما يشوف الطالب رد المدرّس (يدخل الخيط ضمن الشاشة)،
   // يتأكد الاستلام مرة واحدة — بفعل الطالب وتحت جلسته (حارس القاعدة يضمن
@@ -348,6 +368,48 @@ function TeacherThread({
           {busy ? "…" : "إرسال"}
         </button>
       </form>
+
+      {hasTeacherReply && (
+        <div className="mt-3 border-t border-border pt-2">
+          <p className="mb-1 text-xs font-medium text-ink-soft">
+            {ratingSaved ? "تقييمك لهذا المدرّس" : "قيّم هذا المدرّس"}
+          </p>
+          <div className="flex items-center gap-1" dir="ltr">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setStars(n)}
+                aria-label={`${n} نجوم`}
+                className="text-xl leading-none"
+              >
+                <span className={n <= stars ? "text-amber" : "text-border"}>
+                  ★
+                </span>
+              </button>
+            ))}
+          </div>
+          <input
+            value={ratingComment}
+            onChange={(e) => setRatingComment(e.target.value.slice(0, 200))}
+            placeholder="تعليق اختياري…"
+            className="mt-2 w-full rounded-lg border border-border bg-white px-3 py-1.5 text-sm outline-none focus:border-teal"
+          />
+          <div className="mt-2 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={submitRating}
+              disabled={ratingBusy || stars < 1}
+              className="rounded-lg bg-amber px-3 py-1.5 text-xs font-bold text-white hover:brightness-105 disabled:opacity-60"
+            >
+              {ratingBusy ? "…" : ratingSaved ? "تحديث التقييم" : "احفظ التقييم"}
+            </button>
+            {ratingSaved && (
+              <span className="text-xs text-teal-dark">تم ✓</span>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

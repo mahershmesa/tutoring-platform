@@ -101,6 +101,14 @@ export default function TeacherMap({ teachers }: { teachers: MapTeacher[] }) {
                           خبرة {t.years_experience} سنة
                         </span>
                       )}
+                      {t.rating_count > 0 && (
+                        <span className="font-medium text-amber">
+                          ★ {t.avg_rating}{" "}
+                          <span className="font-normal text-ink-soft">
+                            ({t.rating_count})
+                          </span>
+                        </span>
+                      )}
                     </p>
                   </div>
                 </div>

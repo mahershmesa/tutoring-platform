@@ -29,6 +29,8 @@ export type MapTeacher = {
   latitude: number;
   longitude: number;
   answered_count: number;
+  avg_rating: number;
+  rating_count: number;
   subjects: string[];
   stages: string[];
 };

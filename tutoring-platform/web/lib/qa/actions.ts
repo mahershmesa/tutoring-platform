@@ -139,6 +139,37 @@ export async function markNotificationRead(
   return { ok: true };
 }
 
+// الطالب يقيّم مدرّساً تفاعل معه (القاعدة تفرض وجود ردّ فعلي من المدرّس).
+export async function rateTeacher(
+  teacherId: string,
+  rating: number,
+  comment: string,
+): Promise<QAState> {
+  const supabase = createClient();
+  if (!supabase) return { error: "اتصال Supabase غير مضبوط." };
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "لازم تسجيل الدخول." };
+  if (rating < 1 || rating > 5) return { error: "اختر تقييماً من ١ إلى ٥." };
+
+  const { error } = await supabase.from("teacher_ratings").upsert(
+    {
+      student_id: user.id,
+      teacher_id: teacherId,
+      rating,
+      comment: comment.trim() || null,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "student_id,teacher_id" },
+  );
+  if (error) return { error: error.message };
+
+  revalidatePath("/ask");
+  revalidatePath("/");
+  return { ok: true };
+}
+
 export async function confirmAnswer(
   questionId: string,
   teacherId: string,
