@@ -7,12 +7,47 @@ import AdsCarousel, { type PublicAd } from "@/components/content/AdsCarousel";
 import NewsSection, { type PublicNews } from "@/components/content/NewsSection";
 import InstallSection from "@/components/content/InstallSection";
 import InstallBanner from "@/components/content/InstallBanner";
-import { createClient } from "@/lib/supabase/server";
+import { unstable_cache } from "next/cache";
+import { createPublicClient } from "@/lib/supabase/public";
 import type { MapTeacher, Subject } from "@/lib/supabase/types";
 
-// الصفحة ديناميكية: تقرأ من القاعدة عند كل طلب (بيانات حيّة)
+// الصفحة ديناميكية دائماً حتى تبقى حالة الجلسة (AuthNav) صحيحة لكل مستخدم.
+// أما البيانات العامة فمخزّنة مؤقتاً عبر unstable_cache (مستقلّ عن ديناميكية
+// الصفحة) — فتُقرأ من الكاش لا من القاعدة.
 export const dynamic = "force-dynamic";
-export const revalidate = 0;
+
+// البيانات العامة (خريطة/مواد/إعلانات/أخبار) مخزّنة مؤقتاً ٣٠ ثانية ومشتركة
+// بين كل الزوّار — تسريع الزيارات المتكررة.
+const getHomeData = unstable_cache(
+  async () => {
+    const sb = createPublicClient();
+    if (!sb) return { subjects: [], teachers: [], ads: [], news: [] };
+
+    const [subjectsRes, teachersRes, adsRes, newsRes] = await Promise.all([
+      sb.from("subjects").select("id, name").eq("active", true).order("name"),
+      sb.rpc("map_teachers", {}),
+      sb
+        .from("ads")
+        .select("id, image_url, caption, contact_info")
+        .eq("active", true)
+        .order("sort_order", { ascending: true }),
+      sb
+        .from("news")
+        .select("id, image_url, caption, created_at")
+        .order("created_at", { ascending: false })
+        .limit(6),
+    ]);
+
+    return {
+      subjects: (subjectsRes.data as Subject[]) ?? [],
+      teachers: (teachersRes.data as MapTeacher[]) ?? [],
+      ads: (adsRes.data as PublicAd[]) ?? [],
+      news: (newsRes.data as PublicNews[]) ?? [],
+    };
+  },
+  ["home-public-data"],
+  { revalidate: 30, tags: ["home-data"] },
+);
 
 async function getData(): Promise<{
   subjects: Subject[];
@@ -21,33 +56,15 @@ async function getData(): Promise<{
   news: PublicNews[];
   connected: boolean;
 }> {
-  const supabase = createClient();
-  if (!supabase) {
+  const connected = Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL &&
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  );
+  if (!connected) {
     return { subjects: [], teachers: [], ads: [], news: [], connected: false };
   }
-
-  const [subjectsRes, teachersRes, adsRes, newsRes] = await Promise.all([
-    supabase.from("subjects").select("id, name").eq("active", true).order("name"),
-    supabase.rpc("map_teachers", {}),
-    supabase
-      .from("ads")
-      .select("id, image_url, caption, contact_info")
-      .eq("active", true)
-      .order("sort_order", { ascending: true }),
-    supabase
-      .from("news")
-      .select("id, image_url, caption, created_at")
-      .order("created_at", { ascending: false })
-      .limit(6),
-  ]);
-
-  return {
-    subjects: (subjectsRes.data as Subject[]) ?? [],
-    teachers: (teachersRes.data as MapTeacher[]) ?? [],
-    ads: (adsRes.data as PublicAd[]) ?? [],
-    news: (newsRes.data as PublicNews[]) ?? [],
-    connected: true,
-  };
+  const data = await getHomeData();
+  return { ...data, connected: true };
 }
 
 export default async function HomePage() {
