@@ -18,6 +18,9 @@ type Initial = {
   contact_email: string;
   telegram_url: string;
   instagram_url: string;
+  bio: string | null;
+  years_experience: number | null;
+  gender: "male" | "female" | null;
   governorate_id: number | null;
   location_visible: boolean;
   photo_url: string | null;
@@ -65,7 +68,13 @@ export default function TeacherProfileForm({
     contact_email: initial.contact_email ?? "",
     telegram_url: initial.telegram_url ?? "",
     instagram_url: initial.instagram_url ?? "",
+    bio: initial.bio ?? "",
+    years_experience:
+      initial.years_experience != null ? String(initial.years_experience) : "",
   });
+  const [gender, setGender] = useState<"" | "male" | "female">(
+    initial.gender ?? "",
+  );
   const [govId, setGovId] = useState<number | null>(initial.governorate_id);
   const [locationVisible, setLocationVisible] = useState(
     initial.location_visible,
@@ -78,6 +87,7 @@ export default function TeacherProfileForm({
   );
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [idFile, setIdFile] = useState<File | null>(null);
+  const [idPreview, setIdPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ ok?: boolean; text: string } | null>(null);
 
@@ -107,8 +117,11 @@ export default function TeacherProfileForm({
         const res = await uploadFile("id-documents", userId, idFile);
         idPath = res.path;
       }
+      const { years_experience: yrs, ...restF } = f;
       const result = await saveTeacherProfile({
-        ...f,
+        ...restF,
+        years_experience: yrs.trim() === "" ? null : Number(yrs),
+        gender: gender || null,
         governorate_id: govId,
         location_visible: locationVisible,
         photo_url: photoUrl,
@@ -167,6 +180,50 @@ export default function TeacherProfileForm({
           <label className="text-sm text-ink-soft">المعهد (اختياري)</label>
           <input className={inputClass} value={f.institute} onChange={upd("institute")} />
         </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <label className="text-sm text-ink-soft">الجنس</label>
+          <select
+            className={inputClass}
+            value={gender}
+            onChange={(e) =>
+              setGender(e.target.value as "" | "male" | "female")
+            }
+          >
+            <option value="">— اختر —</option>
+            <option value="male">مدرّس</option>
+            <option value="female">مدرّسة</option>
+          </select>
+        </div>
+        <div className="space-y-1">
+          <label className="text-sm text-ink-soft">سنوات الخبرة (اختياري)</label>
+          <input
+            className={inputClass}
+            value={f.years_experience}
+            onChange={(e) =>
+              setF({
+                ...f,
+                years_experience: e.target.value.replace(/[^0-9]/g, "").slice(0, 2),
+              })
+            }
+            inputMode="numeric"
+            placeholder="مثال: ٥"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-1">
+        <label className="text-sm text-ink-soft">نبذة تعريفية (اختياري)</label>
+        <textarea
+          className={inputClass}
+          value={f.bio}
+          onChange={(e) => setF({ ...f, bio: e.target.value.slice(0, 300) })}
+          rows={3}
+          placeholder="عرّف بنفسك وأسلوبك في التدريس (حتى ٣٠٠ حرف)"
+        />
+        <p className="text-left text-xs text-ink-soft">{f.bio.length}/300</p>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -265,15 +322,33 @@ export default function TeacherProfileForm({
 
       {/* إثبات الهوية */}
       <div className="space-y-1">
-        <label className="text-sm text-ink-soft">
-          إثبات هوية تعليمية (اختياري الآن)
-        </label>
+        <label className="text-sm text-ink-soft">إثبات هوية تعليمية</label>
+        <p className="text-xs text-ink-soft">
+          التقط صورة <strong>واضحة</strong> للهوية: كل الحواف ظاهرة، إضاءة جيدة،
+          والنص مقروء (أو ارفع ملف PDF). الصورة غير الواضحة قد تؤخّر التوثيق.
+        </p>
         <input
           type="file"
           accept="image/*,application/pdf"
-          onChange={(e) => setIdFile(e.target.files?.[0] ?? null)}
+          onChange={(e) => {
+            const file = e.target.files?.[0] ?? null;
+            setIdFile(file);
+            setIdPreview(
+              file && file.type.startsWith("image/")
+                ? URL.createObjectURL(file)
+                : null,
+            );
+          }}
           className="w-full text-sm text-ink-soft file:mr-3 file:rounded-lg file:border-0 file:bg-teal-light file:px-3 file:py-1.5 file:text-teal-dark"
         />
+        {idPreview && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={idPreview}
+            alt="معاينة إثبات الهوية"
+            className="mt-2 max-h-52 w-auto rounded-lg border border-border"
+          />
+        )}
         {idDocSignedUrl && !idFile && (
           <a href={idDocSignedUrl} target="_blank" rel="noreferrer" className="text-xs text-teal-dark hover:underline">
             عرض الملف المرفوع حالياً

@@ -30,7 +30,19 @@ function clusterIcon(cluster: { getChildCount: () => number }): L.DivIcon {
   });
 }
 
+function genderLabel(g: MapTeacher["gender"]): string | null {
+  return g === "male" ? "مدرّس" : g === "female" ? "مدرّسة" : null;
+}
+
+function shareText(t: MapTeacher): string {
+  const subj = t.subjects.join("، ");
+  return `${genderLabel(t.gender) ?? "مدرّس"} ${t.full_name}${
+    subj ? " — " + subj : ""
+  } في ${t.governorate_name} على دليلي 👇`;
+}
+
 export default function TeacherMap({ teachers }: { teachers: MapTeacher[] }) {
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
   return (
     <MapContainer
       center={IRAQ_CENTER}
@@ -78,12 +90,45 @@ export default function TeacherMap({ teachers }: { teachers: MapTeacher[] }) {
                     <p className="text-xs text-ink-soft">
                       {t.subjects.join("، ") || "—"} · {t.governorate_name}
                     </p>
+                    <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-ink-soft">
+                      {genderLabel(t.gender) && (
+                        <span className="rounded-full bg-teal-light px-2 py-0.5 text-teal-dark">
+                          {genderLabel(t.gender)}
+                        </span>
+                      )}
+                      {t.years_experience != null && (
+                        <span className="rounded-full bg-surface px-2 py-0.5">
+                          خبرة {t.years_experience} سنة
+                        </span>
+                      )}
+                    </p>
                   </div>
                 </div>
+                {t.bio && (
+                  <p className="text-xs leading-relaxed text-ink">{t.bio}</p>
+                )}
                 <p className="flex items-center gap-1 text-xs text-teal-dark">
                   <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
                   أجاب على {t.answered_count} طالب
                 </p>
+                <div className="flex gap-2 pt-1">
+                  <a
+                    href={`https://wa.me/?text=${encodeURIComponent(shareText(t) + "\n" + origin)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex-1 rounded-lg bg-green-600 px-2 py-1.5 text-center text-xs font-medium text-white hover:bg-green-700"
+                  >
+                    مشاركة واتساب
+                  </a>
+                  <a
+                    href={`https://t.me/share/url?url=${encodeURIComponent(origin)}&text=${encodeURIComponent(shareText(t))}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex-1 rounded-lg bg-sky-500 px-2 py-1.5 text-center text-xs font-medium text-white hover:bg-sky-600"
+                  >
+                    تلغرام
+                  </a>
+                </div>
               </div>
             </Popup>
           </Marker>

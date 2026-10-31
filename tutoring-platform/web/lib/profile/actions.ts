@@ -56,6 +56,9 @@ export type TeacherInput = {
   contact_email: string;
   telegram_url: string;
   instagram_url: string;
+  bio: string;
+  years_experience: number | null;
+  gender: "male" | "female" | null;
   governorate_id: number | null;
   location_visible: boolean;
   photo_url: string | null;
@@ -88,6 +91,9 @@ export async function saveTeacherProfile(
       contact_email: clean(input.contact_email),
       telegram_url: clean(input.telegram_url),
       instagram_url: clean(input.instagram_url),
+      bio: clean(input.bio),
+      years_experience: input.years_experience,
+      gender: input.gender,
       governorate_id: input.governorate_id,
       location_visible: input.location_visible,
       photo_url: clean(input.photo_url),

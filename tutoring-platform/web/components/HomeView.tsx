@@ -24,17 +24,49 @@ export default function HomeView({
   teachers: MapTeacher[];
 }) {
   const [activeSubject, setActiveSubject] = useState<string>(ALL);
+  const [activeGender, setActiveGender] = useState<"all" | "male" | "female">(
+    "all",
+  );
 
-  // الفلترة حسب المادة تتم في المتصفح على بيانات الخريطة المُحمّلة
+  // الفلترة (مادة + جنس) تتم في المتصفح على بيانات الخريطة المُحمّلة
   const visibleTeachers = useMemo(() => {
-    if (activeSubject === ALL) return teachers;
-    return teachers.filter((t) => t.subjects.includes(activeSubject));
-  }, [teachers, activeSubject]);
+    return teachers.filter(
+      (t) =>
+        (activeSubject === ALL || t.subjects.includes(activeSubject)) &&
+        (activeGender === "all" || t.gender === activeGender),
+    );
+  }, [teachers, activeSubject, activeGender]);
 
   const chips = [ALL, ...subjects.map((s) => s.name)];
+  const genderChips: { key: "all" | "male" | "female"; label: string }[] = [
+    { key: "all", label: "الكل" },
+    { key: "male", label: "مدرّس" },
+    { key: "female", label: "مدرّسة" },
+  ];
 
   return (
     <div className="flex flex-col gap-3">
+      {/* فلتر الجنس */}
+      <div className="flex gap-2">
+        {genderChips.map((g) => {
+          const active = g.key === activeGender;
+          return (
+            <button
+              key={g.key}
+              onClick={() => setActiveGender(g.key)}
+              className={
+                "rounded-full border px-4 py-1.5 text-sm transition " +
+                (active
+                  ? "border-teal bg-teal-light font-medium text-teal-dark"
+                  : "border-border bg-white text-ink-soft hover:border-teal")
+              }
+            >
+              {g.label}
+            </button>
+          );
+        })}
+      </div>
+
       {/* شرائح فلاتر المواد */}
       <div className="flex flex-wrap gap-2">
         {chips.map((label) => {

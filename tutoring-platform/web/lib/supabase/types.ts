@@ -21,6 +21,9 @@ export type MapTeacher = {
   user_id: string;
   full_name: string;
   photo_url: string | null;
+  bio: string | null;
+  years_experience: number | null;
+  gender: "male" | "female" | null;
   governorate_id: number;
   governorate_name: string;
   latitude: number;
