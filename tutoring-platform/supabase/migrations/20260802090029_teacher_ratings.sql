@@ -4,7 +4,7 @@
 -- المتوسّط والعدد يُعرضان عبر الدليل العام.
 -- =============================================================
 
-create table public.teacher_ratings (
+create table if not exists public.teacher_ratings (
   student_id uuid not null references auth.users(id) on delete cascade,
   teacher_id uuid not null references auth.users(id) on delete cascade,
   rating     smallint not null check (rating between 1 and 5),
@@ -13,17 +13,19 @@ create table public.teacher_ratings (
   updated_at timestamptz not null default now(),
   primary key (student_id, teacher_id)
 );
-create index idx_teacher_ratings_teacher on public.teacher_ratings (teacher_id);
+create index if not exists idx_teacher_ratings_teacher on public.teacher_ratings (teacher_id);
 
 alter table public.teacher_ratings enable row level security;
 
 -- القراءة عامة (للمتوسّط/العدد/التعليقات)
+drop policy if exists "ratings are public" on public.teacher_ratings;
 create policy "ratings are public"
   on public.teacher_ratings for select
   to anon, authenticated
   using (true);
 
 -- التقييم: الطالب فقط، وبشرط أن المدرّس ردّ عليه فعلاً (تفاعل حقيقي)
+drop policy if exists "student rates an interacted teacher" on public.teacher_ratings;
 create policy "student rates an interacted teacher"
   on public.teacher_ratings for insert
   to authenticated
@@ -37,6 +39,7 @@ create policy "student rates an interacted teacher"
   );
 
 -- التحديث: صاحب التقييم، بنفس شرط التفاعل
+drop policy if exists "student updates own rating" on public.teacher_ratings;
 create policy "student updates own rating"
   on public.teacher_ratings for update
   to authenticated
@@ -51,10 +54,15 @@ create policy "student updates own rating"
   );
 
 -- الحذف: صاحب التقييم أو الإدارة (إشراف)
+drop policy if exists "owner or admin deletes rating" on public.teacher_ratings;
 create policy "owner or admin deletes rating"
   on public.teacher_ratings for delete
   to authenticated
   using (auth.uid() = student_id or public.is_admin());
+
+-- صلاحيات الجدول (في حال لم تُطبَّق الصلاحيات الافتراضية على جدول أُنشئ يدوياً)
+grant select on public.teacher_ratings to anon, authenticated;
+grant insert, update, delete on public.teacher_ratings to authenticated;
 
 
 -- ======================================================================
