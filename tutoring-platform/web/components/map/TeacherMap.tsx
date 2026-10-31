@@ -5,6 +5,7 @@ import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import L from "leaflet";
 import type { MapTeacher } from "@/lib/supabase/types";
+import ReportButton from "@/components/reports/ReportButton";
 
 // نقطة صفراء مخصّصة بدل أيقونة Leaflet الافتراضية (تتجنّب مشاكل مسارات الصور)
 const teacherIcon = L.divIcon({
@@ -83,6 +84,13 @@ function ShareButtons({ t, origin }: { t: MapTeacher; origin: string }) {
       >
         <TelegramIcon />
       </a>
+      <span className="mr-auto">
+        <ReportButton
+          reportedId={t.user_id}
+          reportedName={t.full_name}
+          variant="icon"
+        />
+      </span>
     </div>
   );
 }

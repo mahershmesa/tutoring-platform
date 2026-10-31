@@ -18,6 +18,7 @@ import StatusToast from "@/components/profile/StatusToast";
 import MessageBubble, { type MessageVM } from "@/components/qa/MessageBubble";
 import AttachmentView from "@/components/qa/AttachmentView";
 import EnableNotificationsHint from "@/components/qa/EnableNotificationsHint";
+import ReportButton from "@/components/reports/ReportButton";
 
 export type StudentTeacherThread = {
   teacherId: string;
@@ -408,6 +409,18 @@ function TeacherThread({
               <span className="text-xs text-teal-dark">تم ✓</span>
             )}
           </div>
+        </div>
+      )}
+
+      {hasTeacherReply && (
+        <div className="mt-2 flex justify-end">
+          <ReportButton
+            reportedId={t.teacherId}
+            reportedName={t.teacherName}
+            contextType="question"
+            contextId={questionId}
+            variant="text"
+          />
         </div>
       )}
     </div>

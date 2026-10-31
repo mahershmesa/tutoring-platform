@@ -34,6 +34,12 @@ export default async function AdminLayout({
           توثيق المدرّسين
         </Link>
         <Link
+          href="/admin/reports"
+          className="rounded-xl border border-border px-3 py-1.5 text-ink-soft hover:border-teal"
+        >
+          البلاغات
+        </Link>
+        <Link
           href="/admin/subjects"
           className="rounded-xl border border-border px-3 py-1.5 text-ink-soft hover:border-teal"
         >

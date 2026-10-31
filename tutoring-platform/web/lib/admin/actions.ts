@@ -233,6 +233,63 @@ export async function deleteAd(id: string): Promise<ActionState> {
   return { ok: true };
 }
 
+// ---------- البلاغات والحظر ----------
+
+// الإدارة تضبط حالة بلاغ (reviewed/dismissed) — RLS يسمح للأدمن فقط.
+export async function setReportStatus(
+  reportId: string,
+  status: "reviewed" | "dismissed",
+): Promise<ActionState> {
+  const supabase = await adminClient();
+  if (!supabase) return { error: "غير مصرّح." };
+
+  const { error } = await supabase
+    .from("reports")
+    .update({ status })
+    .eq("id", reportId);
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin/reports");
+  revalidatePath("/admin");
+  return { ok: true };
+}
+
+// حظر مستخدم: تريغر protect_account_ban يمنع غير الأدمن من تعديل banned،
+// فالضبط يمرّ فقط لأن is_admin() صحيح هنا. upsert لتغطية من لا صفّ له.
+export async function banUser(userId: string): Promise<ActionState> {
+  const supabase = await adminClient();
+  if (!supabase) return { error: "غير مصرّح." };
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user?.id === userId) return { error: "لا يمكنك حظر نفسك." };
+
+  const { error } = await supabase
+    .from("account_status")
+    .upsert({ user_id: userId, banned: true }, { onConflict: "user_id" });
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin/reports");
+  revalidatePath("/"); // يختفي من الخريطة/الدليل
+  return { ok: true };
+}
+
+export async function unbanUser(userId: string): Promise<ActionState> {
+  const supabase = await adminClient();
+  if (!supabase) return { error: "غير مصرّح." };
+
+  const { error } = await supabase
+    .from("account_status")
+    .update({ banned: false })
+    .eq("user_id", userId);
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin/reports");
+  revalidatePath("/");
+  return { ok: true };
+}
+
 // ---------- الأخبار ----------
 
 export async function addNews(
