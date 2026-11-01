@@ -52,7 +52,21 @@ export default function RootLayout({
       <body className="min-h-screen bg-surface font-sans text-ink antialiased">
         {/* شاشة البداية — مُقدَّمة من الخادم فتظهر فوراً (تمنع الشاشة السوداء) */}
         <div id="dalili-splash">
-          <span className="brand">دليلي</span>
+          <div className="splash-inner">
+            <div className="splash-logo">
+              {/* رمز أكاديمي (قبّعة تخرّج) */}
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 2.5 1 8.25l11 5.75 9-4.705V15.5h2V8.25L12 2.5Zm0 13.2-5.5-2.877v2.823L12 18.5l5.5-2.854v-2.823L12 15.7Z" />
+              </svg>
+            </div>
+            <span className="brand">دليلي</span>
+            <span className="splash-tag">مدرّسك الموثّق… أقرب إليك</span>
+            <div className="splash-dots" aria-hidden="true">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
         </div>
         <SplashFader />
         {children}
