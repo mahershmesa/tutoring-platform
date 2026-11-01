@@ -65,7 +65,7 @@ export default async function ProfilePage() {
         </Link>
       </header>
 
-      <div className="rounded-2xl border border-border bg-white p-6 shadow-sm">
+      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
         {isTeacher ? (
           <TeacherProfilePanel
             supabase={supabase}

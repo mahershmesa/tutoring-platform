@@ -227,7 +227,7 @@ export default function TeacherMap({ teachers }: { teachers: MapTeacher[] }) {
           onClick={() => setPanel(null)}
         >
           <div
-            className="absolute inset-x-0 bottom-0 max-h-[78vh] overflow-auto rounded-t-2xl bg-white p-4 shadow-2xl"
+            className="absolute inset-x-0 bottom-0 max-h-[78vh] overflow-auto rounded-t-2xl bg-card p-4 shadow-2xl"
             dir="rtl"
             onClick={(e) => e.stopPropagation()}
           >

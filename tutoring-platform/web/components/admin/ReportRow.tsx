@@ -36,7 +36,7 @@ export default function ReportRow({ r }: { r: ReportItem }) {
   if (hidden) return null;
 
   return (
-    <div className="space-y-2 rounded-2xl border border-border bg-white p-4" dir="rtl">
+    <div className="space-y-2 rounded-2xl border border-border bg-card p-4" dir="rtl">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-sm font-bold text-ink">

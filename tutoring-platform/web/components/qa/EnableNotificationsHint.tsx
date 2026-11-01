@@ -88,7 +88,7 @@ export default function EnableNotificationsHint() {
           )}
           <button
             onClick={dismiss}
-            className="rounded-lg border border-border bg-white px-3 py-1.5 text-xs text-ink-soft hover:border-teal"
+            className="rounded-lg border border-border bg-card px-3 py-1.5 text-xs text-ink-soft hover:border-teal"
           >
             لاحقاً
           </button>

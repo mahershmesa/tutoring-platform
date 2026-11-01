@@ -1,6 +1,9 @@
 import type { Config } from "tailwindcss";
 
-// الألوان منقولة من prototype/index.html (teal / amber) كـ design tokens
+// الألوان كـ design tokens عبر متغيّرات CSS (قنوات RGB حتى تعمل الشفافية /50).
+// القيم الفعلية تُعرَّف في globals.css لـ :root (نهار) و[data-theme="dark"] (ليل).
+const rgb = (v: string) => `rgb(var(${v}) / <alpha-value>)`;
+
 const config: Config = {
   content: [
     "./app/**/*.{ts,tsx}",
@@ -10,20 +13,21 @@ const config: Config = {
     extend: {
       colors: {
         teal: {
-          DEFAULT: "#1aa6a0",
-          dark: "#0f7a75",
-          light: "#e3f6f5",
+          DEFAULT: rgb("--c-teal"),
+          dark: rgb("--c-teal-dark"),
+          light: rgb("--c-teal-light"),
         },
         amber: {
-          DEFAULT: "#f0a500",
-          light: "#fdf3d7",
+          DEFAULT: rgb("--c-amber"),
+          light: rgb("--c-amber-light"),
         },
         ink: {
-          DEFAULT: "#1f2933",
-          soft: "#66727d",
+          DEFAULT: rgb("--c-ink"),
+          soft: rgb("--c-ink-soft"),
         },
-        surface: "#f7f9fa",
-        border: "#e2e8ec",
+        surface: rgb("--c-surface"),
+        card: rgb("--c-card"),
+        border: rgb("--c-border"),
       },
       fontFamily: {
         sans: ["var(--font-cairo)", "system-ui", "sans-serif"],

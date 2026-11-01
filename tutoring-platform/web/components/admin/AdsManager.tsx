@@ -62,7 +62,7 @@ export default function AdsManager({ ads }: { ads: AdminAd[] }) {
 
   return (
     <section className="space-y-4">
-      <form onSubmit={onAdd} className="space-y-3 rounded-2xl border border-border bg-white p-4">
+      <form onSubmit={onAdd} className="space-y-3 rounded-2xl border border-border bg-card p-4">
         <div className="space-y-1">
           <label className="text-sm text-ink-soft">صورة الإعلان</label>
           <input
@@ -111,7 +111,7 @@ export default function AdsManager({ ads }: { ads: AdminAd[] }) {
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {ads.map((ad) => (
-          <div key={ad.id} className="overflow-hidden rounded-2xl border border-border bg-white shadow-sm">
+          <div key={ad.id} className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={ad.image_url} alt={ad.caption ?? ""} className="h-32 w-full object-cover" />
             <div className="space-y-2 p-3">

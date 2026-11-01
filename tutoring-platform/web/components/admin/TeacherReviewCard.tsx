@@ -39,7 +39,7 @@ export default function TeacherReviewCard({ t }: { t: ReviewTeacher }) {
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-white p-4 shadow-sm">
+    <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
       <div className="flex items-start gap-3">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img

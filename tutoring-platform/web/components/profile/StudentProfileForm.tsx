@@ -8,7 +8,7 @@ import { saveStudentProfile } from "@/lib/profile/actions";
 import StatusToast from "./StatusToast";
 
 const inputClass =
-  "w-full rounded-xl border border-border bg-white px-3 py-2.5 text-sm outline-none focus:border-teal";
+  "w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-teal";
 
 type Initial = {
   full_name: string;

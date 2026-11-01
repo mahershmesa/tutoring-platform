@@ -40,7 +40,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ar" dir="rtl" className={cairo.variable}>
+    <html lang="ar" dir="rtl" className={cairo.variable} suppressHydrationWarning>
+      <head>
+        {/* no-flash: يضبط الوضع المحفوظ قبل أول رسم (الافتراضي فاتح) */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('dalili-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body className="min-h-screen bg-surface font-sans text-ink antialiased">
         {/* شاشة البداية — مُقدَّمة من الخادم فتظهر فوراً (تمنع الشاشة السوداء) */}
         <div id="dalili-splash">

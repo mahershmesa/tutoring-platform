@@ -17,7 +17,7 @@ export default function NewsSection({ news }: { news: PublicNews[] }) {
         {news.map((n) => (
           <article
             key={n.id}
-            className="overflow-hidden rounded-2xl border border-border bg-white shadow-sm"
+            className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
           >
             {n.image_url && (
               <div className="relative h-36 w-full">

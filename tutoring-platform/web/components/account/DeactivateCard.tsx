@@ -43,7 +43,7 @@ export default function DeactivateCard({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-white p-5 shadow-sm">
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
       <h2 className="font-bold text-ink">تعطيل الحساب</h2>
       <p className="mt-1 text-sm text-ink-soft">
         عند التعطيل يختفي حسابك من المنصة (المدرّس لا يظهر على الخريطة). لا يُحذف

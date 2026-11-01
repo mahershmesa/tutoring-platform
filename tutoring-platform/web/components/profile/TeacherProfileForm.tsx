@@ -8,7 +8,7 @@ import { saveTeacherProfile } from "@/lib/profile/actions";
 import StatusToast from "./StatusToast";
 
 const inputClass =
-  "w-full rounded-xl border border-border bg-white px-3 py-2.5 text-sm outline-none focus:border-teal";
+  "w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-teal";
 
 type Initial = {
   full_name: string;
@@ -266,7 +266,7 @@ export default function TeacherProfileForm({
                   "rounded-full border px-3 py-1.5 text-sm transition " +
                   (active
                     ? "border-teal bg-teal-light font-medium text-teal-dark"
-                    : "border-border bg-white text-ink-soft hover:border-teal")
+                    : "border-border bg-card text-ink-soft hover:border-teal")
                 }
               >
                 {s.name}
@@ -291,7 +291,7 @@ export default function TeacherProfileForm({
                   "rounded-full border px-3 py-1.5 text-sm transition " +
                   (active
                     ? "border-teal bg-teal-light font-medium text-teal-dark"
-                    : "border-border bg-white text-ink-soft hover:border-teal")
+                    : "border-border bg-card text-ink-soft hover:border-teal")
                 }
               >
                 {s.name === "طالب جامعي" ? s.name : "الصف " + s.name}

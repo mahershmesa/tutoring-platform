@@ -39,7 +39,7 @@ export default function MessageBubble({ m }: { m: MessageVM }) {
     <div
       className={
         "max-w-[85%] space-y-1.5 rounded-lg px-3 py-1.5 text-sm " +
-        (m.fromMe ? "ml-auto bg-teal-light text-ink" : "bg-white text-ink shadow-sm")
+        (m.fromMe ? "ml-auto bg-teal-light text-ink" : "bg-card text-ink shadow-sm")
       }
     >
       {m.body && <p className="whitespace-pre-wrap break-words">{renderBody(m.body)}</p>}
@@ -59,7 +59,7 @@ export default function MessageBubble({ m }: { m: MessageVM }) {
             href={m.attachmentUrl}
             target="_blank"
             rel="noreferrer noopener"
-            className="flex items-center gap-1.5 rounded-lg bg-white/70 px-2 py-1 text-teal-dark underline"
+            className="flex items-center gap-1.5 rounded-lg bg-surface/70 px-2 py-1 text-teal-dark underline"
           >
             📎 {m.attachmentName ?? "ملف مرفق"}
           </a>

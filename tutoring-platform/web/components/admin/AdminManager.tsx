@@ -79,7 +79,7 @@ export default function AdminManager({ admins }: { admins: AdminRow[] }) {
           dir="ltr"
           inputMode="tel"
           placeholder="رقم هاتف المستخدم المراد ترقيته"
-          className="flex-1 rounded-xl border border-border bg-white px-3 py-2.5 text-right text-sm outline-none focus:border-teal"
+          className="flex-1 rounded-xl border border-border bg-card px-3 py-2.5 text-right text-sm outline-none focus:border-teal"
         />
         <button
           type="submit"
@@ -94,7 +94,7 @@ export default function AdminManager({ admins }: { admins: AdminRow[] }) {
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{err}</p>
       )}
 
-      <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-white">
+      <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
         {admins.map((a) => (
           <li key={a.userId} className="flex items-center justify-between px-4 py-3 text-sm">
             <div>
@@ -126,7 +126,7 @@ export default function AdminManager({ admins }: { admins: AdminRow[] }) {
       {/* نافذة التأكيد القوي */}
       {target && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 px-4">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
+          <div className="w-full max-w-sm rounded-2xl bg-card p-5 shadow-xl">
             <h3 className="text-base font-bold text-red-700">
               تأكيد ترقية إلى أدمن
             </h3>

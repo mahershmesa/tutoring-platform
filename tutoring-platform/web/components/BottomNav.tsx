@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import ThemeToggle from "@/components/ThemeToggle";
 
 // مسارات نُخفي فيها الشريط (الدخول/التسجيل/الاسترجاع + لوحة الإدارة لها تنقّلها).
 const HIDDEN = ["/login", "/register", "/reset", "/admin"];
@@ -57,7 +58,7 @@ export default function BottomNav() {
       {/* فاصل بنفس ارتفاع الشريط حتى لا يختفي المحتوى خلفه */}
       <div aria-hidden className="h-16" />
       <nav
-        className="fixed inset-x-0 bottom-0 z-[900] border-t border-border bg-white shadow-[0_-2px_10px_rgba(0,0,0,0.05)]"
+        className="fixed inset-x-0 bottom-0 z-[900] border-t border-border bg-card shadow-[0_-2px_10px_rgba(0,0,0,0.05)]"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         <div className="mx-auto flex max-w-3xl">
@@ -77,6 +78,7 @@ export default function BottomNav() {
               </Link>
             );
           })}
+          <ThemeToggle className="flex flex-1 flex-col items-center gap-1 py-2 text-xs font-medium text-ink-soft transition hover:text-teal-dark" />
         </div>
       </nav>
     </>

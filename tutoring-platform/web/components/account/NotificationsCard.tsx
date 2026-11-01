@@ -53,7 +53,7 @@ export default function NotificationsCard() {
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-white p-5 shadow-sm">
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
       <div className="flex items-center justify-between">
         <h2 className="font-bold text-ink">الإشعارات الفورية</h2>
         {support === "ok" &&

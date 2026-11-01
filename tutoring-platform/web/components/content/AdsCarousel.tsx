@@ -28,7 +28,7 @@ export default function AdsCarousel({ ads }: { ads: PublicAd[] }) {
   const clickable = Boolean(ad.contact_info);
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-white shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
       <div className="relative h-40 w-full sm:h-48">
         {/* شرائح مكدّسة محسّنة عبر next/image (تصغير تلقائي على CDN).
             الأولى priority (عنصر LCP)، والباقي يُحمّل بتكاسل — تبديل سلس بالتلاشي. */}
@@ -79,7 +79,7 @@ export default function AdsCarousel({ ads }: { ads: PublicAd[] }) {
           onClick={() => setOpenAd(null)}
         >
           <div
-            className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl"
+            className="w-full max-w-sm rounded-2xl bg-card p-5 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="mb-1 text-base font-bold text-ink">معلومات التواصل</h3>

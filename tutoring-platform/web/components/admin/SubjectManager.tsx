@@ -51,7 +51,7 @@ export default function SubjectManager({
           onChange={(e) => setText(e.target.value)}
           rows={3}
           placeholder={"أضف عدة مواد دفعة وحدة — كل مادة بسطر أو مفصولة بفاصلة\nمثلاً:\nجغرافيا\nتاريخ, حاسوب"}
-          className="w-full rounded-xl border border-border bg-white px-3 py-2.5 text-sm outline-none focus:border-teal"
+          className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-teal"
         />
         <button
           type="submit"
@@ -73,7 +73,7 @@ export default function SubjectManager({
         </p>
       )}
 
-      <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-white">
+      <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
         {subjects.map((s) => (
           <li
             key={s.id}

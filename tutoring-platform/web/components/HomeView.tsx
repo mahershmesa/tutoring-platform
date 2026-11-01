@@ -58,7 +58,7 @@ export default function HomeView({
                 "rounded-full border px-4 py-1.5 text-sm transition " +
                 (active
                   ? "border-teal bg-teal-light font-medium text-teal-dark"
-                  : "border-border bg-white text-ink-soft hover:border-teal")
+                  : "border-border bg-card text-ink-soft hover:border-teal")
               }
             >
               {g.label}
@@ -79,7 +79,7 @@ export default function HomeView({
                 "rounded-full border px-4 py-1.5 text-sm transition " +
                 (active
                   ? "border-teal bg-teal-light font-medium text-teal-dark"
-                  : "border-border bg-white text-ink-soft hover:border-teal")
+                  : "border-border bg-card text-ink-soft hover:border-teal")
               }
             >
               {label}

@@ -63,7 +63,7 @@ export default async function AdminDashboard() {
               "rounded-2xl border p-5 shadow-sm transition hover:border-teal " +
               (c.highlight
                 ? "border-amber bg-amber-light"
-                : "border-border bg-white")
+                : "border-border bg-card")
             }
           >
             <p className="text-3xl font-bold text-teal-dark">{c.value}</p>
@@ -72,7 +72,7 @@ export default async function AdminDashboard() {
         ))}
       </div>
 
-      <section className="rounded-2xl border border-border bg-white p-5">
+      <section className="rounded-2xl border border-border bg-card p-5">
         <h2 className="mb-3 text-sm font-bold text-ink">مؤشّرات النمو</h2>
         <div className="grid grid-cols-3 gap-3 text-center">
           {growth.map((g) => (

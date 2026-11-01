@@ -37,7 +37,7 @@ export default function InboxView({
 }) {
   if (items.length === 0) {
     return (
-      <p className="rounded-2xl border border-border bg-white p-6 text-center text-sm text-ink-soft">
+      <p className="rounded-2xl border border-border bg-card p-6 text-center text-sm text-ink-soft">
         ما وصلك أي سؤال بعد. تأكّد أن حسابك موثّق وأن موادك ومراحلك ومحافظتك
         محدّثة في البروفايل.
       </p>
@@ -99,7 +99,7 @@ function InboxThread({ it, teacherId }: { it: InboxItem; teacherId: string }) {
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-white p-4 shadow-sm">
+    <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
       <button onClick={toggle} className="flex w-full items-start justify-between gap-3 text-right">
         <div className="min-w-0">
           <p className="font-medium text-ink">{it.questionText}</p>
@@ -144,7 +144,7 @@ function InboxThread({ it, teacherId }: { it: InboxItem; teacherId: string }) {
               value={reply}
               onChange={(e) => setReply(e.target.value)}
               placeholder="اكتب ردّك على الطالب…"
-              className="flex-1 rounded-lg border border-border bg-white px-3 py-1.5 text-sm outline-none focus:border-teal"
+              className="flex-1 rounded-lg border border-border bg-card px-3 py-1.5 text-sm outline-none focus:border-teal"
             />
             <label className="cursor-pointer rounded-lg border border-border px-2 py-1.5 text-ink-soft hover:border-teal" title="إرفاق ملف أو صورة">
               📎

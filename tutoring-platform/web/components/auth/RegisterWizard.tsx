@@ -13,12 +13,12 @@ import { SECURITY_QUESTIONS } from "@/lib/auth/security-questions";
 import type { Governorate, Stage, Subject } from "@/lib/supabase/types";
 
 const input =
-  "w-full rounded-xl border border-border bg-white px-3 py-2.5 text-sm outline-none focus:border-teal";
+  "w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-teal";
 const chip = (active: boolean) =>
   "rounded-full border px-3 py-1.5 text-sm transition " +
   (active
     ? "border-teal bg-teal-light font-medium text-teal-dark"
-    : "border-border bg-white text-ink-soft hover:border-teal");
+    : "border-border bg-card text-ink-soft hover:border-teal");
 
 export default function RegisterWizard({
   governorates,
@@ -215,7 +215,7 @@ export default function RegisterWizard({
                   "flex-1 rounded-xl border px-4 py-3 text-sm transition " +
                   (role === r
                     ? "border-teal bg-teal-light font-medium text-teal-dark"
-                    : "border-border bg-white text-ink-soft hover:border-teal")
+                    : "border-border bg-card text-ink-soft hover:border-teal")
                 }
               >
                 {r === "student" ? "أنا طالب" : "أنا مدرّس"}

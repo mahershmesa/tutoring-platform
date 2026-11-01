@@ -73,7 +73,7 @@ export default function ReportButton({
           <div
             dir="rtl"
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-sm rounded-t-2xl bg-white p-5 shadow-2xl sm:rounded-2xl"
+            className="w-full max-w-sm rounded-t-2xl bg-card p-5 shadow-2xl sm:rounded-2xl"
           >
             {done ? (
               <div className="space-y-3 text-center">

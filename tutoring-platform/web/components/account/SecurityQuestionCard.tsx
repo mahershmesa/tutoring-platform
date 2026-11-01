@@ -6,7 +6,7 @@ import { saveSecurityCredential } from "@/lib/account/actions";
 import { SECURITY_QUESTIONS } from "@/lib/auth/security-questions";
 
 const input =
-  "w-full rounded-xl border border-border bg-white px-3 py-2.5 text-sm outline-none focus:border-teal";
+  "w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-teal";
 
 export default function SecurityQuestionCard({
   hasCredential,
@@ -40,7 +40,7 @@ export default function SecurityQuestionCard({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-white p-5 shadow-sm">
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
       <div className="flex items-center justify-between">
         <h2 className="font-bold text-ink">سؤال الأمان</h2>
         {hasCredential ? (

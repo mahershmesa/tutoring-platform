@@ -53,7 +53,7 @@ export default function NewsManager({ news }: { news: AdminNews[] }) {
 
   return (
     <section className="space-y-4">
-      <form onSubmit={onAdd} className="space-y-3 rounded-2xl border border-border bg-white p-4">
+      <form onSubmit={onAdd} className="space-y-3 rounded-2xl border border-border bg-card p-4">
         <textarea
           value={caption}
           onChange={(e) => setCaption(e.target.value)}
@@ -86,7 +86,7 @@ export default function NewsManager({ news }: { news: AdminNews[] }) {
 
       <div className="space-y-3">
         {news.map((n) => (
-          <div key={n.id} className="flex gap-3 rounded-2xl border border-border bg-white p-3 shadow-sm">
+          <div key={n.id} className="flex gap-3 rounded-2xl border border-border bg-card p-3 shadow-sm">
             {n.image_url && (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={n.image_url} alt="" className="h-16 w-16 shrink-0 rounded-lg object-cover" />

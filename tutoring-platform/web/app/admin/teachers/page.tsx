@@ -75,7 +75,7 @@ export default async function AdminTeachersPage() {
       </h2>
 
       {teachers.length === 0 ? (
-        <p className="rounded-2xl border border-border bg-white p-6 text-center text-sm text-ink-soft">
+        <p className="rounded-2xl border border-border bg-card p-6 text-center text-sm text-ink-soft">
           لا يوجد مدرّسون بانتظار المراجعة حالياً. 🎉
         </p>
       ) : (

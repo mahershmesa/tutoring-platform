@@ -5,6 +5,34 @@
 /* أنماط Leaflet الأساسية (نستوردها هنا حتى تُحزَّم مع التطبيق) */
 @import "leaflet/dist/leaflet.css";
 
+/* ===== توكِنات الألوان (قنوات RGB) — نهار افتراضي، وليل عند data-theme="dark" ===== */
+:root {
+  --c-teal: 26 166 160;
+  --c-teal-dark: 15 122 117;
+  --c-teal-light: 227 246 245;
+  --c-amber: 240 165 0;
+  --c-amber-light: 253 243 215;
+  --c-ink: 31 41 51;
+  --c-ink-soft: 102 114 125;
+  --c-surface: 247 249 250;
+  --c-card: 255 255 255;
+  --c-border: 226 232 236;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --c-teal: 42 192 184;
+  --c-teal-dark: 90 210 201;   /* يُستخدم كنص فوق خلفية داكنة → أفتح */
+  --c-teal-light: 18 58 56;    /* رقائق teal داكنة */
+  --c-amber: 245 179 36;
+  --c-amber-light: 58 49 21;
+  --c-ink: 232 237 242;
+  --c-ink-soft: 154 167 180;
+  --c-surface: 15 21 32;
+  --c-card: 26 34 48;
+  --c-border: 43 54 71;
+  color-scheme: dark;
+}
+
 /* الخريطة تملأ الحاوية */
 .leaflet-container {
   height: 100%;
@@ -37,8 +65,20 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
 }
 
-/* ===== منع وميض الشاشة السوداء عند الفتح ===== */
-html { background-color: #f7f9fa; }
+/* ===== منع وميض الشاشة عند الفتح (يتبع التوكِن فينقلب مع الوضع) ===== */
+html { background-color: rgb(var(--c-surface)); }
+
+/* ===== لمسات الوضع الليلي على الخريطة (Leaflet) ===== */
+:root[data-theme="dark"] .leaflet-container { background: #1a2230; }
+:root[data-theme="dark"] .leaflet-popup-content-wrapper,
+:root[data-theme="dark"] .leaflet-popup-tip {
+  background: rgb(var(--c-card));
+  color: rgb(var(--c-ink));
+}
+/* بلاط الخريطة فاتح أصلاً → نخفّف سطوعه قليلاً ليريح العين ليلاً */
+:root[data-theme="dark"] .leaflet-tile {
+  filter: brightness(0.85) contrast(0.95);
+}
 
 /* ===== شاشة البداية (Splash) ===== */
 #dalili-splash {

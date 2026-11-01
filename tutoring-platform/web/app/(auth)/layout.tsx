@@ -10,7 +10,7 @@ export default function AuthLayout({
       <div className="mb-6 text-center">
         <Logo size="lg" />
       </div>
-      <div className="rounded-2xl border border-border bg-white p-6 shadow-sm">
+      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
         {children}
       </div>
     </main>

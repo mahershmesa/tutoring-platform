@@ -82,7 +82,7 @@ export default function AskFlow({
             <button
               key={s.id}
               onClick={() => setSubjectId(s.id)}
-              className="rounded-2xl border border-border bg-white px-4 py-6 text-center font-medium text-ink shadow-sm transition hover:border-teal hover:bg-teal-light"
+              className="rounded-2xl border border-border bg-card px-4 py-6 text-center font-medium text-ink shadow-sm transition hover:border-teal hover:bg-teal-light"
             >
               {s.name}
             </button>
@@ -155,7 +155,7 @@ export default function AskFlow({
           onChange={(e) => setText(e.target.value)}
           rows={3}
           placeholder="اكتب سؤالك بهذه المادة…"
-          className="w-full rounded-xl border border-border bg-white px-3 py-2.5 text-sm outline-none focus:border-teal"
+          className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-teal"
         />
         <div className="flex items-center gap-2">
           <button
@@ -191,7 +191,7 @@ export default function AskFlow({
         {sessionQuestions.map((q) => (
           <div
             key={q.id}
-            className="rounded-2xl border border-border bg-white p-4 shadow-sm"
+            className="rounded-2xl border border-border bg-card p-4 shadow-sm"
           >
             <p className="font-medium text-ink">{q.questionText}</p>
             {q.attachmentUrl && (
@@ -349,7 +349,7 @@ function TeacherThread({
           value={reply}
           onChange={(e) => setReply(e.target.value)}
           placeholder="رسالة للمدرّس…"
-          className="flex-1 rounded-lg border border-border bg-white px-3 py-1.5 text-sm outline-none focus:border-teal"
+          className="flex-1 rounded-lg border border-border bg-card px-3 py-1.5 text-sm outline-none focus:border-teal"
         />
         <label className="cursor-pointer rounded-lg border border-border px-2 py-1.5 text-ink-soft hover:border-teal" title="إرفاق ملف أو صورة">
           📎
@@ -394,7 +394,7 @@ function TeacherThread({
             value={ratingComment}
             onChange={(e) => setRatingComment(e.target.value.slice(0, 200))}
             placeholder="تعليق اختياري…"
-            className="mt-2 w-full rounded-lg border border-border bg-white px-3 py-1.5 text-sm outline-none focus:border-teal"
+            className="mt-2 w-full rounded-lg border border-border bg-card px-3 py-1.5 text-sm outline-none focus:border-teal"
           />
           <div className="mt-2 flex items-center gap-2">
             <button
