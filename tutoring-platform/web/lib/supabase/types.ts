@@ -16,6 +16,9 @@ export type Stage = {
   name: string;
 };
 
+// محافظة المستخدم المسجّل (مرجع فرز «الأقرب»)
+export type UserGov = { id: number; lat: number; lng: number } | null;
+
 // صف يرجع من map_teachers() — نقاط الخريطة
 export type MapTeacher = {
   user_id: string;

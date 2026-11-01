@@ -144,6 +144,12 @@ function TeacherCard({ t, origin }: { t: MapTeacher; origin: string }) {
         <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
         أجاب على {t.answered_count} طالب
       </p>
+      <a
+        href={`/teacher/${t.user_id}`}
+        className="inline-block rounded-lg bg-teal px-3 py-1.5 text-xs font-bold text-white hover:bg-teal-dark"
+      >
+        عرض الملف الكامل ←
+      </a>
       <ShareButtons t={t} origin={origin} />
     </div>
   );
