@@ -1,20 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-
-export type ReportState = { error?: string; ok?: boolean };
-
-// أسباب البلاغ المعروضة في الواجهة (قيمة = نص يُخزَّن).
-export const REPORT_REASONS = [
-  "محتوى غير لائق",
-  "احتيال أو نصب",
-  "انتحال شخصية",
-  "تحرّش أو إساءة",
-  "معلومات مضلّلة",
-  "سبب آخر",
-] as const;
-
-export type ReportContext = "user" | "message" | "question";
+import type { ReportState, ReportContext } from "@/lib/reports/constants";
 
 // المستخدم يُبلّغ عن مستخدم آخر (القاعدة تفرض: المُبلِّغ = الحساب، ولا بلاغ عن النفس،
 // وبلاغ مفتوح واحد لكل زوج عبر الفهرس الفريد).
