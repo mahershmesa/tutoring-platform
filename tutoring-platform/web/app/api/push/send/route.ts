@@ -24,14 +24,40 @@ function safeEqual(a: string, b: string): boolean {
   return timingSafeEqual(ab, bb);
 }
 
-// يبني (المستخدم المستهدَف + نص الإشعار). لا نثق بحمولة الـ webhook:
+// الجمهور المستهدَف: مستخدم واحد، أو فئة كاملة (تبليغ شامل).
+type Audience = "students" | "teachers" | "all";
+type Target = { userId?: string; audience?: Audience; msg: PushMessage };
+
+// يبني (الجمهور المستهدَف + نص الإشعار). لا نثق بحمولة الـ webhook:
 // نعيد جلب الصف من القاعدة بمعرّفه ونبني الإشعار من بيانات موثوقة فقط.
 async function buildTarget(
   admin: NonNullable<ReturnType<typeof createAdminClient>>,
   payload: WebhookPayload,
-): Promise<{ userId: string; msg: PushMessage } | null> {
+): Promise<Target | null> {
   const id = (payload.record ?? {}).id as string | undefined;
   if (!id) return null;
+
+  if (payload.table === "announcements") {
+    const { data: a } = await admin
+      .from("announcements")
+      .select("audience, target_user_id, title, body")
+      .eq("id", id)
+      .maybeSingle();
+    if (!a) return null;
+    const title = (a.title as string | null)?.trim() || "دليلي";
+    const body = ((a.body as string | null) ?? "").trim();
+    const msg: PushMessage = { title, body, url: "/" };
+    const audience = a.audience as string;
+    if (audience === "user") {
+      const uid = a.target_user_id as string | undefined;
+      if (!uid) return null;
+      return { userId: uid, msg };
+    }
+    if (audience === "students" || audience === "teachers" || audience === "all") {
+      return { audience, msg };
+    }
+    return null;
+  }
 
   if (payload.table === "notifications") {
     const { data: n } = await admin
@@ -126,11 +152,24 @@ export async function POST(req: Request) {
   const target = await buildTarget(admin, payload);
   if (!target) return NextResponse.json({ ok: true, skipped: "no-target" });
 
-  // اشتراكات المستخدم المستهدَف (قد تكون عدّة أجهزة).
-  const { data: subs } = await admin
+  // حلّ الاشتراكات حسب الجمهور: مستخدم واحد، فئة (طلاب/أساتذة)، أو الجميع.
+  let subsQuery = admin
     .from("push_subscriptions")
-    .select("endpoint, p256dh, auth")
-    .eq("user_id", target.userId);
+    .select("endpoint, p256dh, auth");
+
+  if (target.userId) {
+    subsQuery = subsQuery.eq("user_id", target.userId);
+  } else if (target.audience === "students" || target.audience === "teachers") {
+    const table =
+      target.audience === "students" ? "student_profiles" : "teacher_profiles";
+    const { data: rows } = await admin.from(table).select("user_id");
+    const ids = (rows ?? []).map((r) => r.user_id as string);
+    if (ids.length === 0) return NextResponse.json({ ok: true, sent: 0 });
+    subsQuery = subsQuery.in("user_id", ids);
+  }
+  // audience === "all": بلا فلتر → كل الاشتراكات.
+
+  const { data: subs } = await subsQuery;
 
   if (!subs || subs.length === 0) {
     return NextResponse.json({ ok: true, sent: 0 });

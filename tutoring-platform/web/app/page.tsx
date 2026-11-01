@@ -7,6 +7,9 @@ import AdsCarousel, { type PublicAd } from "@/components/content/AdsCarousel";
 import NewsSection, { type PublicNews } from "@/components/content/NewsSection";
 import InstallSection from "@/components/content/InstallSection";
 import InstallBanner from "@/components/content/InstallBanner";
+import AnnouncementsBanner, {
+  type BannerItem,
+} from "@/components/content/AnnouncementsBanner";
 import { unstable_cache } from "next/cache";
 import { createPublicClient } from "@/lib/supabase/public";
 import { createClient } from "@/lib/supabase/server";
@@ -43,6 +46,28 @@ async function getUserGov(): Promise<UserGov> {
     .maybeSingle();
   if (!g) return null;
   return { id: g.id, lat: g.latitude as number, lng: g.longitude as number };
+}
+
+// تبليغات المستخدم الحالي (RLS يرجّع ما يخصّ دوره/الشخصي فقط).
+async function getAnnouncements(): Promise<BannerItem[]> {
+  const sb = createClient();
+  if (!sb) return [];
+  const {
+    data: { user },
+  } = await sb.auth.getUser();
+  if (!user) return [];
+  const { data } = await sb
+    .from("announcements")
+    .select("id, kind, title, body")
+    .eq("active", true)
+    .order("created_at", { ascending: false })
+    .limit(10);
+  return (data ?? []).map((a) => ({
+    id: a.id as string,
+    kind: a.kind as string,
+    title: (a.title as string | null) ?? null,
+    body: a.body as string,
+  }));
 }
 
 // الصفحة ديناميكية دائماً حتى تبقى حالة الجلسة (AuthNav) صحيحة لكل مستخدم.
@@ -103,7 +128,9 @@ async function getData(): Promise<{
 
 export default async function HomePage() {
   const { subjects, teachers, ads, news, connected } = await getData();
-  const userGov = connected ? await getUserGov() : null;
+  const [userGov, announcements] = connected
+    ? await Promise.all([getUserGov(), getAnnouncements()])
+    : [null, []];
 
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-5 px-4 py-6">
@@ -118,6 +145,8 @@ export default async function HomePage() {
       </header>
 
       <InstallBanner />
+
+      {announcements.length > 0 && <AnnouncementsBanner items={announcements} />}
 
       {!connected && (
         <div className="rounded-xl border border-amber bg-amber-light px-4 py-3 text-sm text-ink">

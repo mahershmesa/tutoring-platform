@@ -50,6 +50,7 @@ export default function HomeView({
   );
   const [query, setQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortKey>(userGov ? "near" : "rating");
+  const [sortOpen, setSortOpen] = useState(false);
 
   // الفلترة (مادة + جنس + اسم) على بيانات الخريطة المُحمّلة
   const filtered = useMemo(() => {
@@ -157,32 +158,68 @@ export default function HomeView({
         <TeacherMap teachers={filtered} />
       </div>
 
-      {/* الترتيب + القائمة */}
+      {/* الترتيب (قائمة منسدلة) + القائمة */}
       <div className="flex items-center justify-between gap-2 pt-1">
         <h2 className="text-sm font-bold text-ink">
           النتائج{" "}
           <span className="font-normal text-ink-soft">({ranked.length})</span>
         </h2>
-        <div className="flex gap-1.5">
-          {sortChips
-            .filter((s) => s.show)
-            .map((s) => {
-              const active = s.key === sortBy;
-              return (
-                <button
-                  key={s.key}
-                  onClick={() => setSortBy(s.key)}
-                  className={
-                    "rounded-full border px-3 py-1 text-xs transition " +
-                    (active
-                      ? "border-teal bg-teal-light font-medium text-teal-dark"
-                      : "border-border bg-card text-ink-soft hover:border-teal")
-                  }
-                >
-                  {s.label}
-                </button>
-              );
-            })}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setSortOpen((o) => !o)}
+            aria-haspopup="listbox"
+            aria-expanded={sortOpen}
+            className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-ink-soft hover:border-teal"
+          >
+            <span className="text-ink-soft">ترتيب:</span>
+            <span className="text-teal-dark">
+              {sortChips.find((s) => s.key === sortBy)?.label}
+            </span>
+            <span className={"transition " + (sortOpen ? "rotate-180" : "")}>
+              ▾
+            </span>
+          </button>
+
+          {sortOpen && (
+            <>
+              {/* طبقة لإغلاق القائمة عند الضغط خارجها */}
+              <div
+                className="fixed inset-0 z-10"
+                onClick={() => setSortOpen(false)}
+              />
+              <ul
+                role="listbox"
+                className="absolute left-0 z-20 mt-1 w-40 overflow-hidden rounded-xl border border-border bg-card shadow-lg"
+              >
+                {sortChips
+                  .filter((s) => s.show)
+                  .map((s) => {
+                    const active = s.key === sortBy;
+                    return (
+                      <li key={s.key}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSortBy(s.key);
+                            setSortOpen(false);
+                          }}
+                          className={
+                            "flex w-full items-center justify-between px-3 py-2 text-right text-sm transition hover:bg-teal-light " +
+                            (active
+                              ? "font-bold text-teal-dark"
+                              : "text-ink")
+                          }
+                        >
+                          {s.label}
+                          {active && <span className="text-teal">✓</span>}
+                        </button>
+                      </li>
+                    );
+                  })}
+              </ul>
+            </>
+          )}
         </div>
       </div>
 

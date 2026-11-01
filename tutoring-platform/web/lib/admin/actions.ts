@@ -32,6 +32,18 @@ export async function setTeacherVerification(
     .eq("user_id", teacherId);
   if (error) return { error: error.message };
 
+  // عند القبول: إشعار شخصي للمدرّس (تريغر الدفع يرسله push + يظهر داخل التطبيق).
+  // أفضل-جهد: لا نُفشل القبول لو تعذّر إدراج الإشعار.
+  if (status === "approved") {
+    await supabase.from("announcements").insert({
+      audience: "user",
+      target_user_id: teacherId,
+      kind: "approval",
+      title: "تم توثيق حسابك ✅",
+      body: "تهانينا! تم قبول حسابك كمدرّس على دليلي، وأصبح ملفك ظاهراً للطلاب الآن.",
+    });
+  }
+
   revalidatePath("/admin/teachers");
   revalidatePath("/admin");
   revalidatePath("/"); // الخريطة قد تتغيّر عند القبول
@@ -337,6 +349,63 @@ export async function adminDeleteRating(
 
   revalidatePath(`/admin/ratings/${teacherId}`);
   revalidatePath(`/teacher/${teacherId}`);
+  revalidatePath("/");
+  return { ok: true };
+}
+
+// ---------- التبليغات / الإعلانات ----------
+
+export async function sendAnnouncement(
+  audience: "students" | "teachers" | "all",
+  kind: "announcement" | "tip",
+  title: string,
+  body: string,
+): Promise<ActionState> {
+  const supabase = await adminClient();
+  if (!supabase) return { error: "غير مصرّح." };
+
+  const clean = body.trim();
+  if (!clean) return { error: "اكتب نص التبليغ." };
+
+  const { error } = await supabase.from("announcements").insert({
+    audience,
+    kind,
+    title: title.trim() || null,
+    body: clean,
+  });
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin/announcements");
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function setAnnouncementActive(
+  id: string,
+  active: boolean,
+): Promise<ActionState> {
+  const supabase = await adminClient();
+  if (!supabase) return { error: "غير مصرّح." };
+
+  const { error } = await supabase
+    .from("announcements")
+    .update({ active })
+    .eq("id", id);
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin/announcements");
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function deleteAnnouncement(id: string): Promise<ActionState> {
+  const supabase = await adminClient();
+  if (!supabase) return { error: "غير مصرّح." };
+
+  const { error } = await supabase.from("announcements").delete().eq("id", id);
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin/announcements");
   revalidatePath("/");
   return { ok: true };
 }
