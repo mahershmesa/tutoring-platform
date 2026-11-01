@@ -17,6 +17,16 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
+  // تحسين أداء: الزائر غير المسجّل لا يملك كوكي جلسة Supabase (sb-...) — فلا شيء
+  // ليُحدَّث. نمرّر طلبه فوراً دون استدعاء Supabase (نوفّر جولة شبكة على كل تنقّل).
+  // المستخدم المسجّل (عنده كوكي sb-) يبقى مساره كما هو تماماً.
+  const hasSession = request.cookies
+    .getAll()
+    .some((c) => c.name.startsWith("sb-"));
+  if (!hasSession) {
+    return response;
+  }
+
   const supabase = createServerClient(url, key, {
     cookies: {
       getAll() {

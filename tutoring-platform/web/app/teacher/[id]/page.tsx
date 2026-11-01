@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -30,7 +31,9 @@ type Review = {
   created_at: string;
 };
 
-async function getProfile(id: string): Promise<Profile | null> {
+// cache(): يمنع تكرار نفس الاستعلام داخل نفس الطلب — generateMetadata والصفحة
+// يستدعيانه، فيُنفَّذ مرّة واحدة بدل مرّتين (توفير استعلام لكل فتحة).
+const getProfile = cache(async (id: string): Promise<Profile | null> => {
   const sb = createPublicClient();
   if (!sb) return null;
   // الدليل العام يستثني غير المقبول/المحظور/المعطّل — فلا تُعرض ملفات غير صالحة
@@ -42,7 +45,7 @@ async function getProfile(id: string): Promise<Profile | null> {
     .eq("user_id", id)
     .maybeSingle();
   return (data as Profile) ?? null;
-}
+});
 
 async function getReviews(id: string): Promise<Review[]> {
   const sb = createPublicClient();
