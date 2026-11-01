@@ -290,6 +290,57 @@ export async function unbanUser(userId: string): Promise<ActionState> {
   return { ok: true };
 }
 
+// ---------- إشراف التقييمات ----------
+
+// الأدمن يعدّل تقييماً (نجوم/تعليق) — سياسة "admin edits any rating" تسمح بذلك.
+export async function adminUpdateRating(
+  studentId: string,
+  teacherId: string,
+  rating: number,
+  comment: string,
+): Promise<ActionState> {
+  const supabase = await adminClient();
+  if (!supabase) return { error: "غير مصرّح." };
+  if (rating < 1 || rating > 5) return { error: "التقييم من ١ إلى ٥." };
+
+  const { error } = await supabase
+    .from("teacher_ratings")
+    .update({
+      rating,
+      comment: comment.trim() || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("student_id", studentId)
+    .eq("teacher_id", teacherId);
+  if (error) return { error: error.message };
+
+  revalidatePath(`/admin/ratings/${teacherId}`);
+  revalidatePath(`/teacher/${teacherId}`);
+  revalidatePath("/");
+  return { ok: true };
+}
+
+// الأدمن يحذف تقييماً — مسموح أصلاً بسياسة "owner or admin deletes rating".
+export async function adminDeleteRating(
+  studentId: string,
+  teacherId: string,
+): Promise<ActionState> {
+  const supabase = await adminClient();
+  if (!supabase) return { error: "غير مصرّح." };
+
+  const { error } = await supabase
+    .from("teacher_ratings")
+    .delete()
+    .eq("student_id", studentId)
+    .eq("teacher_id", teacherId);
+  if (error) return { error: error.message };
+
+  revalidatePath(`/admin/ratings/${teacherId}`);
+  revalidatePath(`/teacher/${teacherId}`);
+  revalidatePath("/");
+  return { ok: true };
+}
+
 // ---------- الأخبار ----------
 
 export async function addNews(

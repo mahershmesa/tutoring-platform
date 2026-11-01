@@ -9,7 +9,41 @@ import InstallSection from "@/components/content/InstallSection";
 import InstallBanner from "@/components/content/InstallBanner";
 import { unstable_cache } from "next/cache";
 import { createPublicClient } from "@/lib/supabase/public";
-import type { MapTeacher, Subject } from "@/lib/supabase/types";
+import { createClient } from "@/lib/supabase/server";
+import type { MapTeacher, Subject, UserGov } from "@/lib/supabase/types";
+
+// محافظة المستخدم المسجّل (مرجع فرز «الأقرب») — طالباً كان أو مدرّساً.
+async function getUserGov(): Promise<UserGov> {
+  const sb = createClient();
+  if (!sb) return null;
+  const {
+    data: { user },
+  } = await sb.auth.getUser();
+  if (!user) return null;
+  let govId: number | null = null;
+  const { data: sp } = await sb
+    .from("student_profiles")
+    .select("governorate_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  govId = sp?.governorate_id ?? null;
+  if (!govId) {
+    const { data: tp } = await sb
+      .from("teacher_profiles")
+      .select("governorate_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    govId = tp?.governorate_id ?? null;
+  }
+  if (!govId) return null;
+  const { data: g } = await sb
+    .from("governorates")
+    .select("id, latitude, longitude")
+    .eq("id", govId)
+    .maybeSingle();
+  if (!g) return null;
+  return { id: g.id, lat: g.latitude as number, lng: g.longitude as number };
+}
 
 // الصفحة ديناميكية دائماً حتى تبقى حالة الجلسة (AuthNav) صحيحة لكل مستخدم.
 // أما البيانات العامة فمخزّنة مؤقتاً عبر unstable_cache (مستقلّ عن ديناميكية
@@ -69,6 +103,7 @@ async function getData(): Promise<{
 
 export default async function HomePage() {
   const { subjects, teachers, ads, news, connected } = await getData();
+  const userGov = connected ? await getUserGov() : null;
 
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-5 px-4 py-6">
@@ -93,7 +128,7 @@ export default async function HomePage() {
 
       <AdsCarousel ads={ads} />
 
-      <HomeView subjects={subjects} teachers={teachers} />
+      <HomeView subjects={subjects} teachers={teachers} userGov={userGov} />
 
       <NewsSection news={news} />
 

@@ -40,6 +40,12 @@ export default async function AdminLayout({
           البلاغات
         </Link>
         <Link
+          href="/admin/ratings"
+          className="rounded-xl border border-border px-3 py-1.5 text-ink-soft hover:border-teal"
+        >
+          التقييمات
+        </Link>
+        <Link
           href="/admin/subjects"
           className="rounded-xl border border-border px-3 py-1.5 text-ink-soft hover:border-teal"
         >
