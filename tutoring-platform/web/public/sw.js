@@ -2,7 +2,7 @@
 // الاستراتيجية: network-first — نجيب من الشبكة دائماً (بيانات حيّة)، ونرجع
 // للكاش فقط عند انقطاع الشبكة. لا نخزّن الصفحات الديناميكية مسبقاً.
 
-const CACHE = "dalili-v1";
+const CACHE = "dalili-v2";
 const ASSETS = [
   "/icons/icon-192.png",
   "/icons/icon-512.png",
@@ -29,11 +29,17 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+// نتدخّل فقط للأصول المُخزّنة مسبقاً (الأيقونات). نترك HTML وJS وRSC والتنقّل
+// للمتصفح تماماً — هذا يمنع أن يُرجع الـ SW استجابة غير صالحة عند فشل جلب عابر
+// (وهو ما يسبّب ChunkLoadError / "client-side exception" خصوصاً على الموبايل
+// بعد نشر جديد). cache-first للأيقونات فقط.
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
-  if (new URL(req.url).origin !== self.location.origin) return;
-  event.respondWith(fetch(req).catch(() => caches.match(req)));
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin) return;
+  if (!ASSETS.includes(url.pathname)) return; // بقية الطلبات: سلوك المتصفح الطبيعي
+  event.respondWith(caches.match(req).then((cached) => cached || fetch(req)));
 });
 
 // ---------- الإشعارات الفورية (Web Push) ----------
