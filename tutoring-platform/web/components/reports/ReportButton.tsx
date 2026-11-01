@@ -1,11 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import {
-  fileReport,
-  REPORT_REASONS,
-  type ReportContext,
-} from "@/lib/reports/actions";
+import { fileReport } from "@/lib/reports/actions";
+import { REPORT_REASONS, type ReportContext } from "@/lib/reports/constants";
 
 type Props = {
   reportedId: string;
