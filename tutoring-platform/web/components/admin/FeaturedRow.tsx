@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { setTeacherFeatured } from "@/lib/admin/actions";
+import { setTeacherFeatured, setTeacherViewsBase } from "@/lib/admin/actions";
 
 export type FeaturedItem = {
   user_id: string;
@@ -9,6 +9,7 @@ export type FeaturedItem = {
   photo_url: string | null;
   governorate_name: string | null;
   featured_until: string | null;
+  views_base: number;
 };
 
 function isActive(until: string | null): boolean {
@@ -19,6 +20,25 @@ export default function FeaturedRow({ t }: { t: FeaturedItem }) {
   const [until, setUntil] = useState<string | null>(t.featured_until);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [viewsBase, setViewsBase] = useState<number>(t.views_base);
+  const [viewsInput, setViewsInput] = useState<string>(String(t.views_base));
+  const [viewsSaved, setViewsSaved] = useState(false);
+
+  function saveViews() {
+    setError(null);
+    setViewsSaved(false);
+    const n = Math.max(0, Math.trunc(Number(viewsInput) || 0));
+    startTransition(async () => {
+      const res = await setTeacherViewsBase(t.user_id, n);
+      if (res.error) setError(res.error);
+      else {
+        setViewsBase(n);
+        setViewsInput(String(n));
+        setViewsSaved(true);
+        setTimeout(() => setViewsSaved(false), 2500);
+      }
+    });
+  }
 
   function apply(days: number) {
     setError(null);
@@ -101,6 +121,31 @@ export default function FeaturedRow({ t }: { t: FeaturedItem }) {
           >
             إلغاء التمييز
           </button>
+        )}
+      </div>
+
+      {/* تعديل المشاهدات الأساسية (تُضاف إلى الحقيقية في لوحة المدرّس) */}
+      <div className="flex flex-wrap items-center gap-2 border-t border-border pt-2">
+        <span className="text-xs text-ink-soft">مشاهدات أساسية:</span>
+        <input
+          type="number"
+          min={0}
+          value={viewsInput}
+          onChange={(e) => setViewsInput(e.target.value)}
+          className="w-24 rounded-lg border border-border bg-card px-2 py-1 text-sm outline-none focus:border-teal"
+        />
+        <button
+          disabled={pending}
+          onClick={saveViews}
+          className="rounded-lg bg-teal px-3 py-1 text-xs font-bold text-white hover:bg-teal-dark disabled:opacity-60"
+        >
+          حفظ
+        </button>
+        {viewsSaved && <span className="text-xs text-teal-dark">تم ✓</span>}
+        {viewsBase > 0 && !viewsSaved && (
+          <span className="text-[11px] text-ink-soft">
+            (تُضاف +{viewsBase} للمشاهدات الحقيقية)
+          </span>
         )}
       </div>
     </div>

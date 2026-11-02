@@ -328,6 +328,27 @@ export async function setTeacherFeatured(
   return { ok: true };
 }
 
+// يضبط «المشاهدات الأساسية» التي تُضاف إلى مشاهدات المدرّس الحقيقية في لوحته.
+// القاعدة تمنع المدرّس من ضبطها؛ تمرّ هنا لأن الفاعل إداري.
+export async function setTeacherViewsBase(
+  teacherId: string,
+  base: number,
+): Promise<ActionState> {
+  const supabase = await adminClient();
+  if (!supabase) return { error: "غير مصرّح." };
+
+  const clean = Number.isFinite(base) ? Math.max(0, Math.trunc(base)) : 0;
+  const { error } = await supabase
+    .from("teacher_profiles")
+    .update({ views_base: clean })
+    .eq("user_id", teacherId);
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin/featured");
+  revalidatePath("/stats");
+  return { ok: true };
+}
+
 // ---------- إشراف التقييمات ----------
 
 // الأدمن يعدّل تقييماً (نجوم/تعليق) — سياسة "admin edits any rating" تسمح بذلك.

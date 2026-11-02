@@ -52,7 +52,7 @@ export default async function StatsPage() {
   // لا بدّ أن يكون مدرّساً
   const { data: tp } = await supabase
     .from("teacher_profiles")
-    .select("answered_count, featured_until, verification_status")
+    .select("answered_count, featured_until, verification_status, views_base")
     .eq("user_id", user.id)
     .maybeSingle();
   if (!tp) redirect("/profile");
@@ -113,7 +113,7 @@ export default async function StatsPage() {
       <div className="grid grid-cols-2 gap-3">
         <StatCard
           label="مشاهدات ملفك"
-          value={totalViews.count ?? 0}
+          value={(totalViews.count ?? 0) + (tp.views_base ?? 0)}
           hint="إجمالي الزيارات"
         />
         <StatCard

@@ -8,6 +8,7 @@ type Row = {
   full_name: string;
   photo_url: string | null;
   featured_until: string | null;
+  views_base: number;
   governorates: { name: string } | null;
 };
 
@@ -24,7 +25,7 @@ export default async function AdminFeaturedPage({
   const nowIso = new Date().toISOString();
   const { data: current } = await supabase
     .from("teacher_profiles")
-    .select("user_id, full_name, photo_url, featured_until, governorates(name)")
+    .select("user_id, full_name, photo_url, featured_until, views_base, governorates(name)")
     .eq("verification_status", "approved")
     .gt("featured_until", nowIso)
     .order("featured_until", { ascending: true });
@@ -33,7 +34,7 @@ export default async function AdminFeaturedPage({
   if (query) {
     const { data } = await supabase
       .from("teacher_profiles")
-      .select("user_id, full_name, photo_url, featured_until, governorates(name)")
+      .select("user_id, full_name, photo_url, featured_until, views_base, governorates(name)")
       .eq("verification_status", "approved")
       .ilike("full_name", `%${query}%`)
       .order("full_name")
@@ -47,6 +48,7 @@ export default async function AdminFeaturedPage({
     photo_url: r.photo_url,
     governorate_name: r.governorates?.name ?? null,
     featured_until: r.featured_until,
+    views_base: r.views_base ?? 0,
   });
 
   const currentItems = ((current ?? []) as unknown as Row[]).map(toItem);
