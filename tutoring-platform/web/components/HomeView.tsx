@@ -67,10 +67,17 @@ export default function HomeView({
   const ranked = useMemo(() => {
     const byChoice = (a: MapTeacher, b: MapTeacher): number => {
       if (sortBy === "near" && userGov) {
-        return (
+        // ١) محافظة الطالب نفسها أولاً
+        const aSame = a.governorate_id === userGov.id ? 0 : 1;
+        const bSame = b.governorate_id === userGov.id ? 0 : 1;
+        if (aSame !== bSame) return aSame - bSame;
+        // ٢) ثم المحافظات الأقرب جغرافياً
+        const d =
           km(userGov.lat, userGov.lng, a.latitude, a.longitude) -
-          km(userGov.lat, userGov.lng, b.latitude, b.longitude)
-        );
+          km(userGov.lat, userGov.lng, b.latitude, b.longitude);
+        if (d !== 0) return d;
+        // ٣) وداخل نفس المسافة: الأعلى تقييماً
+        return b.avg_rating - a.avg_rating || b.rating_count - a.rating_count;
       }
       if (sortBy === "active") return b.answered_count - a.answered_count;
       return b.avg_rating - a.avg_rating || b.rating_count - a.rating_count;
@@ -229,8 +236,9 @@ export default function HomeView({
         <ul className="flex flex-col gap-2">
           {ranked.map((t) => {
             const gl = genderLabel(t.gender);
+            const sameGov = !!userGov && t.governorate_id === userGov.id;
             const dist =
-              sortBy === "near" && userGov
+              sortBy === "near" && userGov && !sameGov
                 ? km(userGov.lat, userGov.lng, t.latitude, t.longitude)
                 : null;
             return (
@@ -265,8 +273,15 @@ export default function HomeView({
                         </span>
                       )}
                     </p>
-                    <p className="truncate text-xs text-ink-soft">
-                      {t.subjects.join("، ") || "—"} · {t.governorate_name}
+                    <p className="flex items-center gap-1.5 truncate text-xs text-ink-soft">
+                      <span className="truncate">
+                        {t.subjects.join("، ") || "—"} · {t.governorate_name}
+                      </span>
+                      {sameGov && (
+                        <span className="shrink-0 rounded-full bg-teal-light px-1.5 py-0.5 text-[10px] font-medium text-teal-dark">
+                          📍 محافظتك
+                        </span>
+                      )}
                     </p>
                     <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-ink-soft">
                       {gl && <span className="text-teal-dark">{gl}</span>}
