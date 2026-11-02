@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { timingSafeEqual } from "crypto";
 import webpush from "web-push";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isAllowedPushEndpoint } from "@/lib/push/allowlist";
 
 // web-push يعتمد على Node crypto — لا يعمل على Edge runtime.
 export const runtime = "nodejs";
@@ -169,9 +170,15 @@ export async function POST(req: Request) {
   }
   // audience === "all": بلا فلتر → كل الاشتراكات.
 
-  const { data: subs } = await subsQuery;
+  const { data: allSubs } = await subsQuery;
 
-  if (!subs || subs.length === 0) {
+  // دفاع بالعمق ضدّ SSRF: لا نرسل إلا إلى نقاط خدمات الدفع المعروفة، مهما كان
+  // ما في القاعدة (فوق تريغر guard_push_endpoint على مستوى القاعدة).
+  const subs = (allSubs ?? []).filter((s) =>
+    isAllowedPushEndpoint(s.endpoint),
+  );
+
+  if (subs.length === 0) {
     return NextResponse.json({ ok: true, sent: 0 });
   }
 

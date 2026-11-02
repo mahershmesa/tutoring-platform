@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { isAllowedPushEndpoint } from "@/lib/push/allowlist";
 
 export type PushState = { error?: string; ok?: boolean };
 
@@ -9,24 +10,6 @@ export type PushSubJSON = {
   endpoint: string;
   keys?: { p256dh?: string; auth?: string };
 };
-
-// يقبل فقط عناوين خدمات الدفع المعروفة (يمنع SSRF عبر endpoint مُلفَّق).
-function isAllowedEndpoint(endpoint: string): boolean {
-  try {
-    const u = new URL(endpoint);
-    if (u.protocol !== "https:") return false;
-    const h = u.hostname.toLowerCase();
-    return (
-      h === "fcm.googleapis.com" ||
-      h.endsWith(".push.services.mozilla.com") ||
-      h.endsWith(".notify.windows.com") ||
-      h === "web.push.apple.com" ||
-      h.endsWith(".push.apple.com")
-    );
-  } catch {
-    return false;
-  }
-}
 
 // يحفظ اشتراك المتصفح الحالي للمستخدم المسجَّل (upsert على endpoint).
 export async function savePushSubscription(
@@ -44,7 +27,7 @@ export async function savePushSubscription(
   const auth = sub?.keys?.auth;
   if (!endpoint || !p256dh || !auth)
     return { error: "بيانات الاشتراك ناقصة." };
-  if (!isAllowedEndpoint(endpoint))
+  if (!isAllowedPushEndpoint(endpoint))
     return { error: "عنوان اشتراك غير مدعوم." };
 
   const { error } = await supabase
