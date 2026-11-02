@@ -9,6 +9,8 @@ import { authError } from "@/lib/auth/errors";
 import { uploadFile } from "@/lib/supabase/upload";
 import { saveStudentProfile, saveTeacherProfile } from "@/lib/profile/actions";
 import { saveSecurityCredential } from "@/lib/account/actions";
+import { recordReferral } from "@/lib/referral/actions";
+import { REF_STORAGE_KEY } from "@/components/ReferralCapture";
 import { SECURITY_QUESTIONS } from "@/lib/auth/security-questions";
 import type { Governorate, Stage, Subject } from "@/lib/supabase/types";
 
@@ -174,6 +176,16 @@ export default function RegisterWizard({
       }
       // سؤال الأمان (best-effort — الحساب أُنشئ؛ يمكن ضبطه لاحقاً من البروفايل)
       await saveSecurityCredential(securityQuestion, securityAnswer);
+      // دعوة الأصدقاء: إن وصل المستخدم عبر رابط دعوة، احتسبها للداعي (best-effort)
+      try {
+        const ref = localStorage.getItem(REF_STORAGE_KEY);
+        if (ref) {
+          await recordReferral(ref);
+          localStorage.removeItem(REF_STORAGE_KEY);
+        }
+      } catch {
+        /* تجاهل — لا تمنع إكمال التسجيل */
+      }
       router.push("/");
       router.refresh();
     } catch (e) {

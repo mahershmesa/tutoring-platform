@@ -4,6 +4,7 @@ import "./globals.css";
 import PWARegister from "@/components/PWARegister";
 import BottomNav from "@/components/BottomNav";
 import SplashFader from "@/components/SplashFader";
+import ReferralCapture from "@/components/ReferralCapture";
 
 const cairo = Cairo({
   subsets: ["arabic", "latin"],
@@ -76,6 +77,7 @@ export default function RootLayout({
           </div>
         </div>
         <SplashFader />
+        <ReferralCapture />
         {children}
         <BottomNav />
         <PWARegister />

@@ -8,6 +8,7 @@ import TeacherProfileForm from "@/components/profile/TeacherProfileForm";
 import SecurityQuestionCard from "@/components/account/SecurityQuestionCard";
 import NotificationsCard from "@/components/account/NotificationsCard";
 import DeactivateCard from "@/components/account/DeactivateCard";
+import InviteCard from "@/components/profile/InviteCard";
 
 export const metadata: Metadata = { title: "بروفايلي — دليلي" };
 export const dynamic = "force-dynamic";
@@ -56,6 +57,16 @@ export default async function ProfilePage() {
   ]);
   const deactivated = Boolean(statusRow?.deactivated);
 
+  // دعوة الأصدقاء: رمز المستخدم + عدد من دعاهم
+  const [{ data: refCode }, { count: refCount }] = await Promise.all([
+    supabase.rpc("my_referral_code"),
+    supabase
+      .from("referrals")
+      .select("*", { count: "exact", head: true })
+      .eq("referrer_id", user.id),
+  ]);
+  const inviteCode = typeof refCode === "string" ? refCode : null;
+
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-5 px-4 py-6">
       <header className="flex items-center justify-between">
@@ -64,6 +75,8 @@ export default async function ProfilePage() {
           ← الرئيسية
         </Link>
       </header>
+
+      {inviteCode && <InviteCard code={inviteCode} count={refCount ?? 0} />}
 
       {isTeacher && (
         <Link
