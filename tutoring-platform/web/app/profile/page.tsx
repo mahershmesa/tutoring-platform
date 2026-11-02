@@ -65,6 +65,16 @@ export default async function ProfilePage() {
         </Link>
       </header>
 
+      {isTeacher && (
+        <Link
+          href="/stats"
+          className="flex items-center justify-between rounded-2xl border border-teal/30 bg-teal-light px-5 py-3 text-sm font-bold text-teal-dark transition hover:border-teal"
+        >
+          <span>📊 لوحة إحصاءاتي</span>
+          <span>←</span>
+        </Link>
+      )}
+
       <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
         {isTeacher ? (
           <TeacherProfilePanel

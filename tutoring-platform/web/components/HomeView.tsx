@@ -161,64 +161,65 @@ export default function HomeView({
           النتائج{" "}
           <span className="font-normal text-ink-soft">({ranked.length})</span>
         </h2>
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setSortOpen((o) => !o)}
-            aria-haspopup="listbox"
-            aria-expanded={sortOpen}
-            className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-ink-soft hover:border-teal"
-          >
-            <span className="text-ink-soft">ترتيب:</span>
-            <span className="text-teal-dark">
-              {sortChips.find((s) => s.key === sortBy)?.label}
-            </span>
-            <span className={"transition " + (sortOpen ? "rotate-180" : "")}>
-              ▾
-            </span>
-          </button>
-
-          {sortOpen && (
-            <>
-              {/* طبقة لإغلاق القائمة عند الضغط خارجها */}
-              <div
-                className="fixed inset-0 z-10"
-                onClick={() => setSortOpen(false)}
-              />
-              <ul
-                role="listbox"
-                className="absolute left-0 z-20 mt-1 w-40 overflow-hidden rounded-xl border border-border bg-card shadow-lg"
-              >
-                {sortChips
-                  .filter((s) => s.show)
-                  .map((s) => {
-                    const active = s.key === sortBy;
-                    return (
-                      <li key={s.key}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSortBy(s.key);
-                            setSortOpen(false);
-                          }}
-                          className={
-                            "flex w-full items-center justify-between px-3 py-2 text-right text-sm transition hover:bg-teal-light " +
-                            (active
-                              ? "font-bold text-teal-dark"
-                              : "text-ink")
-                          }
-                        >
-                          {s.label}
-                          {active && <span className="text-teal">✓</span>}
-                        </button>
-                      </li>
-                    );
-                  })}
-              </ul>
-            </>
-          )}
-        </div>
+        <button
+          type="button"
+          onClick={() => setSortOpen(true)}
+          aria-haspopup="dialog"
+          aria-expanded={sortOpen}
+          className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-ink-soft hover:border-teal"
+        >
+          <span className="text-ink-soft">ترتيب:</span>
+          <span className="text-teal-dark">
+            {sortChips.find((s) => s.key === sortBy)?.label}
+          </span>
+          <span>▾</span>
+        </button>
       </div>
+
+      {/* شاشة الفرز المنزلقة (bottom sheet) — تُطبَّق فقط عند الاختيار */}
+      {sortOpen && (
+        <div
+          className="fixed inset-0 z-[1100] bg-black/40"
+          onClick={() => setSortOpen(false)}
+        >
+          <div
+            className="absolute inset-x-0 bottom-0 rounded-t-2xl bg-card p-4 shadow-2xl"
+            style={{ animation: "dalili-sheet-up 0.25s ease" }}
+            dir="rtl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-border" />
+            <h3 className="mb-2 text-sm font-bold text-ink">ترتيب النتائج</h3>
+            <ul className="flex flex-col gap-1">
+              {sortChips
+                .filter((s) => s.show)
+                .map((s) => {
+                  const active = s.key === sortBy;
+                  return (
+                    <li key={s.key}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSortBy(s.key);
+                          setSortOpen(false);
+                        }}
+                        className={
+                          "flex w-full items-center justify-between rounded-xl px-4 py-3 text-right text-sm transition " +
+                          (active
+                            ? "bg-teal-light font-bold text-teal-dark"
+                            : "text-ink hover:bg-surface")
+                        }
+                      >
+                        {s.label}
+                        {active && <span className="text-teal">✓</span>}
+                      </button>
+                    </li>
+                  );
+                })}
+            </ul>
+          </div>
+        </div>
+      )}
 
       {ranked.length === 0 ? (
         <p className="rounded-xl border border-border bg-card p-5 text-center text-sm text-ink-soft">

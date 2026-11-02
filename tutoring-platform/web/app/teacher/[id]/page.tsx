@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import ShareProfile from "@/components/teacher/ShareProfile";
 import ReportButton from "@/components/reports/ReportButton";
+import RecordProfileView from "@/components/teacher/RecordProfileView";
 
 export const dynamic = "force-dynamic";
 
@@ -118,6 +119,7 @@ export default async function TeacherProfilePage({
 
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-5 px-4 py-6" dir="rtl">
+      <RecordProfileView teacherId={p.user_id} />
       <Link href="/" className="text-sm text-ink-soft hover:text-teal-dark">
         ← الرئيسية
       </Link>

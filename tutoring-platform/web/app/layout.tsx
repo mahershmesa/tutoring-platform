@@ -31,6 +31,13 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
+  // يمنع تكبير/تصغير الشاشة بالأصابع أو تلقائياً عند فتح حقل كتابة (مشكلة
+  // توسّع الشاشة التي قد يعلق فيها الطالب). الخريطة (Leaflet) تبقى تتكبّر
+  // بأصابعها لأنها تدير التكبير داخلياً لا عبر زوم المتصفّح.
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
   themeColor: "#1aa6a0",
 };
 

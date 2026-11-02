@@ -214,6 +214,12 @@ html { background-color: rgb(var(--c-surface)); }
   }
 }
 
+/* ===== انزلاق الشاشة السفلية (bottom sheet) ===== */
+@keyframes dalili-sheet-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
 /* ===== مؤشّر التحميل بين الصفحات ===== */
 .dalili-loader {
   display: flex;
