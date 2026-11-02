@@ -10,6 +10,23 @@ const clean = (v: string | null | undefined) => {
   return t === "" ? null : t;
 };
 
+// يقبل رابط قناة/فيديو يوتيوب فقط (https) — يمنع روابط ضارّة (javascript:, …).
+// يعيد الرابط النظيف أو null (فارغ)، أو false إن كان غير صالح.
+function cleanYouTube(v: string | null | undefined): string | null | false {
+  const t = (v ?? "").trim();
+  if (t === "") return null;
+  try {
+    const u = new URL(t);
+    if (u.protocol !== "https:") return false;
+    const h = u.hostname.toLowerCase().replace(/^www\./, "");
+    if (h === "youtube.com" || h === "m.youtube.com" || h === "youtu.be")
+      return u.toString();
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 export type StudentInput = {
   full_name: string;
   phone: string;
@@ -56,6 +73,7 @@ export type TeacherInput = {
   contact_email: string;
   telegram_url: string;
   instagram_url: string;
+  youtube_url: string;
   bio: string;
   years_experience: number | null;
   gender: "male" | "female" | null;
@@ -80,6 +98,10 @@ export async function saveTeacherProfile(
 
   if (!clean(input.full_name)) return { error: "اكتب اسمك." };
 
+  const youtube = cleanYouTube(input.youtube_url);
+  if (youtube === false)
+    return { error: "رابط يوتيوب غير صالح (يجب أن يبدأ بـ https ومن يوتيوب)." };
+
   // ملاحظة: لا نلمس verification_status ولا answered_count — محميّان بالقاعدة.
   const { error: upErr } = await supabase
     .from("teacher_profiles")
@@ -88,6 +110,7 @@ export async function saveTeacherProfile(
       phone: clean(input.phone),
       school: clean(input.school),
       institute: clean(input.institute),
+      youtube_url: youtube,
       contact_email: clean(input.contact_email),
       telegram_url: clean(input.telegram_url),
       instagram_url: clean(input.instagram_url),

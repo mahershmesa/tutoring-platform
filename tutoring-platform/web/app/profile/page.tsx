@@ -181,6 +181,7 @@ async function TeacherProfilePanel({
           contact_email: tp?.contact_email ?? "",
           telegram_url: tp?.telegram_url ?? "",
           instagram_url: tp?.instagram_url ?? "",
+          youtube_url: tp?.youtube_url ?? "",
           bio: tp?.bio ?? null,
           years_experience: tp?.years_experience ?? null,
           gender: tp?.gender ?? null,

@@ -18,6 +18,7 @@ type Initial = {
   contact_email: string;
   telegram_url: string;
   instagram_url: string;
+  youtube_url: string;
   bio: string | null;
   years_experience: number | null;
   gender: "male" | "female" | null;
@@ -68,6 +69,7 @@ export default function TeacherProfileForm({
     contact_email: initial.contact_email ?? "",
     telegram_url: initial.telegram_url ?? "",
     instagram_url: initial.instagram_url ?? "",
+    youtube_url: initial.youtube_url ?? "",
     bio: initial.bio ?? "",
     years_experience:
       initial.years_experience != null ? String(initial.years_experience) : "",
@@ -235,6 +237,20 @@ export default function TeacherProfileForm({
           <label className="text-sm text-ink-soft">رابط انستغرام</label>
           <input className={inputClass} value={f.instagram_url} onChange={upd("instagram_url")} dir="ltr" />
         </div>
+      </div>
+
+      <div className="space-y-1">
+        <label className="text-sm text-ink-soft">رابط قناة يوتيوب ▶️</label>
+        <input
+          className={inputClass}
+          value={f.youtube_url}
+          onChange={upd("youtube_url")}
+          dir="ltr"
+          placeholder="https://youtube.com/@yourchannel"
+        />
+        <p className="text-xs text-ink-soft">
+          اختياري — يظهر زرّ «قناة اليوتيوب» في صفحتك ليصل إليها الطلاب.
+        </p>
       </div>
 
       <div className="space-y-1">

@@ -156,6 +156,7 @@ export default function RegisterWizard({
           contact_email: contactEmail,
           telegram_url: telegramUrl,
           instagram_url: instagramUrl,
+          youtube_url: "",
           bio: "",
           years_experience: null,
           gender: null,

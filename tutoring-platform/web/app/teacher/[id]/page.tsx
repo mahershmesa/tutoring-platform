@@ -22,6 +22,7 @@ type Profile = {
   avg_rating: number;
   rating_count: number;
   featured: boolean;
+  youtube_url: string | null;
   governorate_name: string;
   subjects: string[];
   stages: string[];
@@ -42,7 +43,7 @@ const getProfile = cache(async (id: string): Promise<Profile | null> => {
   const { data } = await sb
     .from("teacher_directory")
     .select(
-      "user_id, full_name, photo_url, school, institute, bio, years_experience, gender, answered_count, avg_rating, rating_count, featured, governorate_name, subjects, stages",
+      "user_id, full_name, photo_url, school, institute, bio, years_experience, gender, answered_count, avg_rating, rating_count, featured, youtube_url, governorate_name, subjects, stages",
     )
     .eq("user_id", id)
     .maybeSingle();
@@ -190,6 +191,20 @@ export default async function TeacherProfilePage({
           <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
           أجاب على {p.answered_count} طالب
         </p>
+
+        {p.youtube_url && (
+          <a
+            href={p.youtube_url}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-red-700"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5" aria-hidden>
+              <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+            </svg>
+            قناة اليوتيوب
+          </a>
+        )}
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
           <Link

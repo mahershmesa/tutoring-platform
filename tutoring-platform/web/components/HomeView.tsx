@@ -19,18 +19,6 @@ const ALL = "الكل";
 
 type SortKey = "rating" | "active" | "near";
 
-// مسافة هافرسين (كم) بين إحداثيين
-function km(aLat: number, aLng: number, bLat: number, bLng: number): number {
-  const R = 6371;
-  const toRad = (d: number) => (d * Math.PI) / 180;
-  const dLat = toRad(bLat - aLat);
-  const dLng = toRad(bLng - aLng);
-  const s =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(aLat)) * Math.cos(toRad(bLat)) * Math.sin(dLng / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(s));
-}
-
 function genderLabel(g: MapTeacher["gender"]): string | null {
   return g === "male" ? "مدرّس" : g === "female" ? "مدرّسة" : null;
 }
@@ -64,29 +52,23 @@ export default function HomeView({
   }, [teachers, activeSubject, activeGender, query]);
 
   // القائمة المرتّبة: المدرّس المميّز أولاً دائماً، ثم حسب الفرز المختار.
+  // في وضع «الأقرب»: نعرض مدرّسي محافظة الطالب فقط (ومدرّسو المحافظات الأخرى
+  // يبقون متاحين للمراسلة عبر الخريطة).
+  const nearOnly = sortBy === "near" && !!userGov;
   const ranked = useMemo(() => {
+    const base = nearOnly
+      ? filtered.filter((t) => t.governorate_id === userGov!.id)
+      : filtered;
+
     const byChoice = (a: MapTeacher, b: MapTeacher): number => {
-      if (sortBy === "near" && userGov) {
-        // ١) محافظة الطالب نفسها أولاً
-        const aSame = a.governorate_id === userGov.id ? 0 : 1;
-        const bSame = b.governorate_id === userGov.id ? 0 : 1;
-        if (aSame !== bSame) return aSame - bSame;
-        // ٢) ثم المحافظات الأقرب جغرافياً
-        const d =
-          km(userGov.lat, userGov.lng, a.latitude, a.longitude) -
-          km(userGov.lat, userGov.lng, b.latitude, b.longitude);
-        if (d !== 0) return d;
-        // ٣) وداخل نفس المسافة: الأعلى تقييماً
-        return b.avg_rating - a.avg_rating || b.rating_count - a.rating_count;
-      }
       if (sortBy === "active") return b.answered_count - a.answered_count;
       return b.avg_rating - a.avg_rating || b.rating_count - a.rating_count;
     };
-    return [...filtered].sort((a, b) => {
+    return [...base].sort((a, b) => {
       if (a.featured !== b.featured) return a.featured ? -1 : 1; // المميّز أولاً
       return byChoice(a, b);
     });
-  }, [filtered, sortBy, userGov]);
+  }, [filtered, sortBy, userGov, nearOnly]);
 
   const chips = [ALL, ...subjects.map((s) => s.name)];
   const genderChips: { key: "all" | "male" | "female"; label: string }[] = [
@@ -228,19 +210,24 @@ export default function HomeView({
         </div>
       )}
 
+      {nearOnly && (
+        <p className="rounded-xl border border-teal/30 bg-teal-light px-3 py-2 text-xs text-teal-dark">
+          📍 مدرّسو محافظتك فقط. للتواصل مع مدرّس من محافظة أخرى، اختره من الخريطة
+          بالأعلى.
+        </p>
+      )}
+
       {ranked.length === 0 ? (
         <p className="rounded-xl border border-border bg-card p-5 text-center text-sm text-ink-soft">
-          لا يوجد مدرّسون مطابقون لبحثك.
+          {nearOnly
+            ? "لا يوجد مدرّسون في محافظتك بعد — جرّب الخريطة أو فرزاً آخر."
+            : "لا يوجد مدرّسون مطابقون لبحثك."}
         </p>
       ) : (
         <ul className="flex flex-col gap-2">
           {ranked.map((t) => {
             const gl = genderLabel(t.gender);
             const sameGov = !!userGov && t.governorate_id === userGov.id;
-            const dist =
-              sortBy === "near" && userGov && !sameGov
-                ? km(userGov.lat, userGov.lng, t.latitude, t.longitude)
-                : null;
             return (
               <li key={t.user_id}>
                 <Link
@@ -277,7 +264,7 @@ export default function HomeView({
                       <span className="truncate">
                         {t.subjects.join("، ") || "—"} · {t.governorate_name}
                       </span>
-                      {sameGov && (
+                      {sameGov && !nearOnly && (
                         <span className="shrink-0 rounded-full bg-teal-light px-1.5 py-0.5 text-[10px] font-medium text-teal-dark">
                           📍 محافظتك
                         </span>
@@ -294,7 +281,6 @@ export default function HomeView({
                         </span>
                       )}
                       <span>أجاب {t.answered_count}</span>
-                      {dist != null && <span>· {Math.round(dist)} كم</span>}
                     </p>
                   </div>
                   <span className="shrink-0 text-ink-soft">←</span>
