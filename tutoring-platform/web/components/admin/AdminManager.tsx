@@ -2,13 +2,20 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { findUserByPhone, grantAdmin, revokeAdmin } from "@/lib/admin/actions";
+import {
+  findUserByPhone,
+  grantAdmin,
+  revokeAdmin,
+  suspendAdmin,
+} from "@/lib/admin/actions";
 
 export type AdminRow = {
   userId: string;
   name: string;
   phone: string | null;
   isSelf: boolean;
+  isSuper: boolean;
+  active: boolean;
 };
 
 const CONFIRM_WORD = "ترقية";
@@ -57,8 +64,18 @@ export default function AdminManager({ admins }: { admins: AdminRow[] }) {
   }
 
   async function remove(userId: string) {
+    setErr(null);
     setBusy(true);
     const res = await revokeAdmin(userId);
+    setBusy(false);
+    if (res.error) setErr(res.error);
+    else router.refresh();
+  }
+
+  async function toggleSuspend(userId: string, suspend: boolean) {
+    setErr(null);
+    setBusy(true);
+    const res = await suspendAdmin(userId, suspend);
     setBusy(false);
     if (res.error) setErr(res.error);
     else router.refresh();
@@ -67,9 +84,10 @@ export default function AdminManager({ admins }: { admins: AdminRow[] }) {
   return (
     <section className="space-y-4">
       <div className="rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-        ⚠️ صلاحية الأدمن هي <strong>أخطر صلاحية</strong> في الموقع: قبول
-        المدرّسين، إدارة كل المحتوى، وترقية/سحب مدراء آخرين. لا تمنحها إلا لشخص
-        تثق به تماماً.
+        ⚠️ أنت <strong>المدير الأساسي</strong>. المدراء الذين تضيفهم هنا هم
+        <strong> مدراء مستوى ثاني</strong>: يديرون المحتوى والمدرّسين، لكن
+        <strong> لا يديرون المدراء</strong> (لا يرقّون/يفصلون/يوقفون أحداً). تقدر
+        <strong> توقفهم مؤقتاً</strong> أو <strong>تفصلهم</strong> متى شئت.
       </div>
 
       <form onSubmit={lookup} className="flex gap-2">
@@ -96,12 +114,22 @@ export default function AdminManager({ admins }: { admins: AdminRow[] }) {
 
       <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
         {admins.map((a) => (
-          <li key={a.userId} className="flex items-center justify-between px-4 py-3 text-sm">
-            <div>
+          <li key={a.userId} className="flex items-center justify-between gap-2 px-4 py-3 text-sm">
+            <div className="min-w-0">
               <span className="font-medium text-ink">{a.name}</span>
+              {a.isSuper && (
+                <span className="mr-2 rounded-full bg-amber-light px-2 py-0.5 text-xs font-bold text-amber">
+                  👑 أساسي
+                </span>
+              )}
               {a.isSelf && (
                 <span className="mr-2 rounded-full bg-teal-light px-2 py-0.5 text-xs text-teal-dark">
                   أنت
+                </span>
+              )}
+              {!a.active && (
+                <span className="mr-2 rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-700">
+                  موقوف
                 </span>
               )}
               {a.phone && (
@@ -110,14 +138,24 @@ export default function AdminManager({ admins }: { admins: AdminRow[] }) {
                 </span>
               )}
             </div>
-            {!a.isSelf && (
-              <button
-                onClick={() => remove(a.userId)}
-                disabled={busy}
-                className="rounded-lg border border-red-300 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-60"
-              >
-                سحب الصلاحية
-              </button>
+            {/* المدير الأساسي ونفسك لا تُطبَّق عليهما إجراءات */}
+            {!a.isSelf && !a.isSuper && (
+              <div className="flex shrink-0 gap-1.5">
+                <button
+                  onClick={() => toggleSuspend(a.userId, a.active)}
+                  disabled={busy}
+                  className="rounded-lg border border-border px-3 py-1 text-xs text-ink-soft hover:border-teal disabled:opacity-60"
+                >
+                  {a.active ? "إيقاف" : "تفعيل"}
+                </button>
+                <button
+                  onClick={() => remove(a.userId)}
+                  disabled={busy}
+                  className="rounded-lg border border-red-300 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-60"
+                >
+                  فصل
+                </button>
+              </div>
             )}
           </li>
         ))}
@@ -131,9 +169,9 @@ export default function AdminManager({ admins }: { admins: AdminRow[] }) {
               تأكيد ترقية إلى أدمن
             </h3>
             <p className="mt-2 text-sm text-ink">
-              أنت على وشك منح صلاحية <strong>الأدمن الكاملة</strong> لـ{" "}
-              <strong>{target.name}</strong>. هذا الشخص سيتمكّن من إدارة كل شيء،
-              بما فيه ترقية/سحب مدراء آخرين. <strong>لا يمكن التراجع تلقائياً.</strong>
+              أنت على وشك منح <strong>{target.name}</strong> صلاحية{" "}
+              <strong>مدير مستوى ثاني</strong>: يدير المحتوى والمدرّسين، لكن لا
+              يدير المدراء. تقدر توقفه أو تفصله لاحقاً.
             </p>
             <p className="mt-3 text-sm text-ink-soft">
               للتأكيد، اكتب كلمة <strong className="text-ink">«{CONFIRM_WORD}»</strong>{" "}

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { isAdmin } from "@/lib/admin/guard";
+import { isAdmin, isSuperAdmin } from "@/lib/admin/guard";
 import { normalizePhone, isValidPhone } from "@/lib/auth/phone";
 
 export type ActionState = { error?: string; ok?: boolean };
@@ -17,6 +17,18 @@ async function adminClient() {
   if (!user) return null;
   if (!(await isAdmin(supabase, user.id))) return null;
   return supabase;
+}
+
+// للأفعال التي يملكها المدير الأساسي فقط (إدارة المدراء).
+async function superClient() {
+  const supabase = createClient();
+  if (!supabase) return null;
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+  if (!(await isSuperAdmin(supabase, user.id))) return null;
+  return { supabase, userId: user.id };
 }
 
 export async function setTeacherVerification(
@@ -86,14 +98,15 @@ export async function setSubjectActive(
   return { ok: true };
 }
 
-// ---------- إدارة المدراء (أخطر صلاحية) ----------
+// ---------- إدارة المدراء (للمدير الأساسي فقط) ----------
 
 // يبحث عن مستخدم برقم هاتفه (بدون منح أي صلاحية) — لعرض هويته في تأكيد الترقية.
 export async function findUserByPhone(
   phoneRaw: string,
 ): Promise<ActionState & { userId?: string; name?: string; already?: boolean }> {
-  const supabase = await adminClient();
-  if (!supabase) return { error: "غير مصرّح." };
+  const sc = await superClient();
+  if (!sc) return { error: "غير مصرّح (للمدير الأساسي فقط)." };
+  const supabase = sc.supabase;
   const phone = normalizePhone(phoneRaw);
   if (!isValidPhone(phone)) return { error: "رقم هاتف غير صحيح." };
 
@@ -130,13 +143,14 @@ export async function findUserByPhone(
   return { ok: true, userId, name: name ?? undefined, already: Boolean(role) };
 }
 
+// منح «مدير مستوى ثاني» (super=false دائماً — لا يُنشأ مدير أساسي من الواجهة).
 export async function grantAdmin(userId: string): Promise<ActionState> {
-  const supabase = await adminClient();
-  if (!supabase) return { error: "غير مصرّح." };
+  const sc = await superClient();
+  if (!sc) return { error: "غير مصرّح (للمدير الأساسي فقط)." };
 
-  const { error } = await supabase
+  const { error } = await sc.supabase
     .from("user_roles")
-    .insert({ user_id: userId, role: "admin" });
+    .insert({ user_id: userId, role: "admin", active: true, super: false });
   if (error) {
     if (error.code === "23505") return { error: "هذا المستخدم أدمن مسبقاً." };
     return { error: error.message };
@@ -145,20 +159,52 @@ export async function grantAdmin(userId: string): Promise<ActionState> {
   return { ok: true };
 }
 
+// فصل مدير (حذف الدور). لا يفصل الأساسي نفسه، ولا يفصل مديراً أساسياً آخر.
 export async function revokeAdmin(userId: string): Promise<ActionState> {
-  const supabase = await adminClient();
-  if (!supabase) return { error: "غير مصرّح." };
+  const sc = await superClient();
+  if (!sc) return { error: "غير مصرّح (للمدير الأساسي فقط)." };
+  if (sc.userId === userId)
+    return { error: "لا يمكنك فصل نفسك." };
 
-  // منع سحب الصلاحية عن النفس (تفادي الإغلاق الذاتي)
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (user?.id === userId)
-    return { error: "لا يمكنك سحب صلاحيتك عن نفسك." };
+  const { data: target } = await sc.supabase
+    .from("user_roles")
+    .select("super")
+    .eq("user_id", userId)
+    .eq("role", "admin")
+    .maybeSingle();
+  if (target?.super) return { error: "لا يمكن فصل مدير أساسي." };
 
-  const { error } = await supabase
+  const { error } = await sc.supabase
     .from("user_roles")
     .delete()
+    .eq("user_id", userId)
+    .eq("role", "admin");
+  if (error) return { error: error.message };
+  revalidatePath("/admin/admins");
+  return { ok: true };
+}
+
+// إيقاف/تفعيل مدير مستوى ثاني (تعليق مؤقت دون حذف الدور).
+export async function suspendAdmin(
+  userId: string,
+  suspended: boolean,
+): Promise<ActionState> {
+  const sc = await superClient();
+  if (!sc) return { error: "غير مصرّح (للمدير الأساسي فقط)." };
+  if (sc.userId === userId)
+    return { error: "لا يمكنك إيقاف نفسك." };
+
+  const { data: target } = await sc.supabase
+    .from("user_roles")
+    .select("super")
+    .eq("user_id", userId)
+    .eq("role", "admin")
+    .maybeSingle();
+  if (target?.super) return { error: "لا يمكن إيقاف مدير أساسي." };
+
+  const { error } = await sc.supabase
+    .from("user_roles")
+    .update({ active: !suspended })
     .eq("user_id", userId)
     .eq("role", "admin");
   if (error) return { error: error.message };

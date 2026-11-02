@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireAdmin } from "@/lib/admin/guard";
+import { requireAdmin, isSuperAdmin } from "@/lib/admin/guard";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +9,8 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   // يحمي كل مسارات /admin/* — غير الأدمن يُحوّل بعيداً
-  await requireAdmin();
+  const { supabase, userId } = await requireAdmin();
+  const superAdmin = await isSuperAdmin(supabase, userId);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">
@@ -75,12 +76,14 @@ export default async function AdminLayout({
         >
           الأخبار
         </Link>
-        <Link
-          href="/admin/admins"
-          className="rounded-xl border border-border px-3 py-1.5 text-ink-soft hover:border-teal"
-        >
-          المدراء
-        </Link>
+        {superAdmin && (
+          <Link
+            href="/admin/admins"
+            className="rounded-xl border border-border px-3 py-1.5 text-ink-soft hover:border-teal"
+          >
+            المدراء
+          </Link>
+        )}
       </nav>
 
       {children}

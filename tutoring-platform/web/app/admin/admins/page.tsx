@@ -1,16 +1,23 @@
-import { requireAdmin } from "@/lib/admin/guard";
+import { requireSuperAdmin } from "@/lib/admin/guard";
 import AdminManager, { type AdminRow } from "@/components/admin/AdminManager";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminAdminsPage() {
-  const { supabase, userId } = await requireAdmin();
+  // إدارة المدراء للمدير الأساسي فقط
+  const { supabase, userId } = await requireSuperAdmin();
 
   const { data: roleRows } = await supabase
     .from("user_roles")
-    .select("user_id")
+    .select("user_id, active, super")
     .eq("role", "admin");
   const ids = (roleRows ?? []).map((r) => r.user_id as string);
+  const statusMap = new Map(
+    (roleRows ?? []).map((r) => [
+      r.user_id as string,
+      { active: Boolean(r.active), super: Boolean(r.super) },
+    ]),
+  );
 
   // أسماء/هواتف المدراء من البروفايلات (مدرّس أو طالب)
   const nameMap = new Map<string, { name: string; phone: string | null }>();
@@ -39,6 +46,8 @@ export default async function AdminAdminsPage() {
     name: nameMap.get(id)?.name ?? "—",
     phone: nameMap.get(id)?.phone ?? null,
     isSelf: id === userId,
+    isSuper: statusMap.get(id)?.super ?? false,
+    active: statusMap.get(id)?.active ?? true,
   }));
 
   return (

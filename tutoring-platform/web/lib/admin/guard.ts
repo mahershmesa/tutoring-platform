@@ -3,18 +3,42 @@ import { createClient } from "@/lib/supabase/server";
 
 type ServerClient = NonNullable<ReturnType<typeof createClient>>;
 
-/** يتحقق أن المستخدم الحالي إداري (يقرأ صفّه في user_roles — RLS يسمح بذلك). */
+/** يتحقق أن المستخدم إداري نشط (الدور active — المُوقَف يفقد صلاحيته). */
 export async function isAdmin(
   supabase: ServerClient,
   userId: string,
 ): Promise<boolean> {
   const { data } = await supabase
     .from("user_roles")
-    .select("role")
+    .select("active")
     .eq("user_id", userId)
     .eq("role", "admin")
     .maybeSingle();
-  return Boolean(data);
+  return Boolean(data?.active);
+}
+
+/** مدير أساسي (super)؟ يملك إدارة المدراء. */
+export async function isSuperAdmin(
+  supabase: ServerClient,
+  userId: string,
+): Promise<boolean> {
+  const { data } = await supabase
+    .from("user_roles")
+    .select("super, active")
+    .eq("user_id", userId)
+    .eq("role", "admin")
+    .maybeSingle();
+  return Boolean(data?.super && data?.active);
+}
+
+/** حارس صفحات إدارة المدراء: يتطلّب مديراً أساسياً. */
+export async function requireSuperAdmin(): Promise<{
+  supabase: ServerClient;
+  userId: string;
+}> {
+  const { supabase, userId } = await requireAdmin();
+  if (!(await isSuperAdmin(supabase, userId))) redirect("/admin");
+  return { supabase, userId };
 }
 
 /**
