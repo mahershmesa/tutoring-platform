@@ -34,6 +34,7 @@ export type MapTeacher = {
   answered_count: number;
   avg_rating: number;
   rating_count: number;
+  featured: boolean;
   subjects: string[];
   stages: string[];
 };

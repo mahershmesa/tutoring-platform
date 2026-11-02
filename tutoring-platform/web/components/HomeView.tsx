@@ -63,25 +63,22 @@ export default function HomeView({
     );
   }, [teachers, activeSubject, activeGender, query]);
 
-  // القائمة المرتّبة (الخريطة تستعمل filtered بلا ترتيب)
+  // القائمة المرتّبة: المدرّس المميّز أولاً دائماً، ثم حسب الفرز المختار.
   const ranked = useMemo(() => {
-    const arr = [...filtered];
-    if (sortBy === "near" && userGov) {
-      arr.sort(
-        (a, b) =>
+    const byChoice = (a: MapTeacher, b: MapTeacher): number => {
+      if (sortBy === "near" && userGov) {
+        return (
           km(userGov.lat, userGov.lng, a.latitude, a.longitude) -
-          km(userGov.lat, userGov.lng, b.latitude, b.longitude),
-      );
-    } else if (sortBy === "active") {
-      arr.sort((a, b) => b.answered_count - a.answered_count);
-    } else {
-      // الأعلى تقييماً ثم الأكثر عدداً
-      arr.sort(
-        (a, b) =>
-          b.avg_rating - a.avg_rating || b.rating_count - a.rating_count,
-      );
-    }
-    return arr;
+          km(userGov.lat, userGov.lng, b.latitude, b.longitude)
+        );
+      }
+      if (sortBy === "active") return b.answered_count - a.answered_count;
+      return b.avg_rating - a.avg_rating || b.rating_count - a.rating_count;
+    };
+    return [...filtered].sort((a, b) => {
+      if (a.featured !== b.featured) return a.featured ? -1 : 1; // المميّز أولاً
+      return byChoice(a, b);
+    });
   }, [filtered, sortBy, userGov]);
 
   const chips = [ALL, ...subjects.map((s) => s.name)];
@@ -239,7 +236,12 @@ export default function HomeView({
               <li key={t.user_id}>
                 <Link
                   href={`/teacher/${t.user_id}`}
-                  className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 shadow-sm transition hover:border-teal"
+                  className={
+                    "flex items-center gap-3 rounded-2xl border bg-card p-3 shadow-sm transition hover:border-teal " +
+                    (t.featured
+                      ? "border-amber ring-1 ring-amber/40"
+                      : "border-border")
+                  }
                 >
                   {t.photo_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -254,8 +256,13 @@ export default function HomeView({
                     </span>
                   )}
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-bold text-ink">
+                    <p className="flex items-center gap-1.5 truncate text-sm font-bold text-ink">
                       {t.full_name}
+                      {t.featured && (
+                        <span className="shrink-0 rounded-full bg-amber-light px-1.5 py-0.5 text-[10px] font-bold text-amber">
+                          👑 مميّز
+                        </span>
+                      )}
                     </p>
                     <p className="truncate text-xs text-ink-soft">
                       {t.subjects.join("، ") || "—"} · {t.governorate_name}

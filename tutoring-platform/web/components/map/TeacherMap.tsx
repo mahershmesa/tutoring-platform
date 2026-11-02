@@ -113,7 +113,14 @@ function TeacherCard({ t, origin }: { t: MapTeacher; origin: string }) {
           </span>
         )}
         <div className="min-w-0">
-          <p className="text-sm font-bold text-ink">{t.full_name}</p>
+          <p className="flex items-center gap-1.5 text-sm font-bold text-ink">
+            {t.full_name}
+            {t.featured && (
+              <span className="shrink-0 rounded-full bg-amber-light px-1.5 py-0.5 text-[10px] font-bold text-amber">
+                👑 مميّز
+              </span>
+            )}
+          </p>
           <p className="text-xs text-ink-soft">
             {t.subjects.join("، ") || "—"} · {t.governorate_name}
           </p>

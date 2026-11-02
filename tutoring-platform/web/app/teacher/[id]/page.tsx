@@ -20,6 +20,7 @@ type Profile = {
   answered_count: number;
   avg_rating: number;
   rating_count: number;
+  featured: boolean;
   governorate_name: string;
   subjects: string[];
   stages: string[];
@@ -40,7 +41,7 @@ const getProfile = cache(async (id: string): Promise<Profile | null> => {
   const { data } = await sb
     .from("teacher_directory")
     .select(
-      "user_id, full_name, photo_url, school, institute, bio, years_experience, gender, answered_count, avg_rating, rating_count, governorate_name, subjects, stages",
+      "user_id, full_name, photo_url, school, institute, bio, years_experience, gender, answered_count, avg_rating, rating_count, featured, governorate_name, subjects, stages",
     )
     .eq("user_id", id)
     .maybeSingle();
@@ -137,7 +138,14 @@ export default async function TeacherProfilePage({
             </span>
           )}
           <div className="min-w-0 flex-1">
-            <h1 className="text-xl font-bold text-ink">{p.full_name}</h1>
+            <h1 className="flex flex-wrap items-center gap-2 text-xl font-bold text-ink">
+              {p.full_name}
+              {p.featured && (
+                <span className="rounded-full bg-amber-light px-2 py-0.5 text-xs font-bold text-amber">
+                  👑 مميّز
+                </span>
+              )}
+            </h1>
             <p className="mt-0.5 text-sm text-ink-soft">
               {p.subjects.join("، ") || "—"} · {p.governorate_name}
             </p>

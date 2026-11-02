@@ -302,6 +302,32 @@ export async function unbanUser(userId: string): Promise<ActionState> {
   return { ok: true };
 }
 
+// ---------- المدرّس المميّز (Featured) ----------
+
+// يميّز مدرّساً لعدد أيام (days>0) أو يُلغي التمييز (days<=0).
+// القاعدة تمنع المدرّس من تمييز نفسه؛ هنا يمرّ لأن الفاعل إداري.
+export async function setTeacherFeatured(
+  teacherId: string,
+  days: number,
+): Promise<ActionState> {
+  const supabase = await adminClient();
+  if (!supabase) return { error: "غير مصرّح." };
+
+  const featuredUntil =
+    days > 0 ? new Date(Date.now() + days * 86400000).toISOString() : null;
+
+  const { error } = await supabase
+    .from("teacher_profiles")
+    .update({ featured_until: featuredUntil })
+    .eq("user_id", teacherId);
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin/featured");
+  revalidatePath("/");
+  revalidatePath(`/teacher/${teacherId}`);
+  return { ok: true };
+}
+
 // ---------- إشراف التقييمات ----------
 
 // الأدمن يعدّل تقييماً (نجوم/تعليق) — سياسة "admin edits any rating" تسمح بذلك.
