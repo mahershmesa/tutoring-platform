@@ -100,6 +100,41 @@ export async function uploadPublicMedia(
 }
 
 /**
+ * يرفع ملف وزاري/نموذج إلى bucket عام "study-resources" بالمسار <user_id>/...
+ * سياسة الكتابة: مدرّس معتمد في مجلده فقط. يرجّع المسار + الرابط العام + النوع + الاسم.
+ */
+export async function uploadStudyResource(
+  userId: string,
+  file: File,
+): Promise<{ path: string; publicUrl: string; mime: string; name: string }> {
+  const supabase = createClient();
+  checkSize(file, 20);
+  const isImage = file.type.startsWith("image/") && file.type !== "image/gif";
+  const toUpload = isImage
+    ? await compressImage(file, { maxDim: 1800, quality: 0.82 })
+    : file;
+
+  const rawExt = toUpload.name.includes(".")
+    ? toUpload.name.split(".").pop()!
+    : "bin";
+  const ext = rawExt.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8) || "bin";
+  const path = `${userId}/paper-${Date.now()}.${ext}`;
+
+  const { error } = await supabase.storage
+    .from("study-resources")
+    .upload(path, toUpload, { cacheControl: "3600", upsert: false });
+  if (error) throw new Error(uploadErrorMessage(error.message, 20));
+
+  const { data } = supabase.storage.from("study-resources").getPublicUrl(path);
+  return {
+    path,
+    publicUrl: data.publicUrl,
+    mime: toUpload.type || file.type,
+    name: file.name,
+  };
+}
+
+/**
  * يرفع مرفق رسالة إلى bucket خاص بالمسار <question_id>/<teacher_id>/...
  * حيث teacher_id هو المدرّس طرف المحادثة. سياسات RLS تضمن أن يصله فقط
  * الطالب صاحب السؤال والمدرّس صاحب المجلد. يرجّع المسار + النوع + الاسم الأصلي.

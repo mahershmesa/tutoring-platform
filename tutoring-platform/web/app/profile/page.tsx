@@ -79,13 +79,22 @@ export default async function ProfilePage() {
       {inviteCode && <InviteCard code={inviteCode} count={refCount ?? 0} />}
 
       {isTeacher && (
-        <Link
-          href="/stats"
-          className="flex items-center justify-between rounded-2xl border border-teal/30 bg-teal-light px-5 py-3 text-sm font-bold text-teal-dark transition hover:border-teal"
-        >
-          <span>📊 لوحة إحصاءاتي</span>
-          <span>←</span>
-        </Link>
+        <>
+          <Link
+            href="/stats"
+            className="flex items-center justify-between rounded-2xl border border-teal/30 bg-teal-light px-5 py-3 text-sm font-bold text-teal-dark transition hover:border-teal"
+          >
+            <span>📊 لوحة إحصاءاتي</span>
+            <span>←</span>
+          </Link>
+          <Link
+            href="/teach"
+            className="flex items-center justify-between rounded-2xl border border-teal/30 bg-teal-light px-5 py-3 text-sm font-bold text-teal-dark transition hover:border-teal"
+          >
+            <span>📚 محتواي الدراسي — وزاريات واختبارات</span>
+            <span>←</span>
+          </Link>
+        </>
       )}
 
       <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">

@@ -181,6 +181,23 @@ export default async function AskPage() {
         </Link>
       </header>
 
+      <div className="grid grid-cols-2 gap-2">
+        <Link
+          href="/quiz"
+          className="flex flex-col items-start gap-0.5 rounded-2xl border border-teal/30 bg-teal-light px-4 py-3 transition hover:border-teal"
+        >
+          <span className="text-sm font-bold text-teal-dark">📝 اختبر نفسك</span>
+          <span className="text-xs text-ink-soft">أسئلة وتصحيح فوري</span>
+        </Link>
+        <Link
+          href="/papers"
+          className="flex flex-col items-start gap-0.5 rounded-2xl border border-teal/30 bg-teal-light px-4 py-3 transition hover:border-teal"
+        >
+          <span className="text-sm font-bold text-teal-dark">🏛️ الوزاريات</span>
+          <span className="text-xs text-ink-soft">نماذج وأسئلة سابقة</span>
+        </Link>
+      </div>
+
       <AskFlow
         profileComplete={profileComplete}
         subjects={subjects}
