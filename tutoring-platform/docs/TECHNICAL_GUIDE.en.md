@@ -147,3 +147,18 @@ A unified table serving three cases:
 | 30 | `reports_and_ban` | reports + admin ban + hiding banned users |
 | 31 | `admin_edit_ratings` | admin permission to edit ratings |
 | 32 | `announcements` | announcements system + role functions + push trigger |
+| 33–40 | (see files) | push allowlist, featured, views, YouTube, admin tiers, referrals, teacher study content |
+| 41 | `security_audit_fixes` | full security-audit fixes (see section 8) |
+
+---
+
+## 8) Security-Audit Lessons (migration 41) — rules to keep
+
+1. **Views are dangerous by default on Supabase.** Any view created in `public` receives `ALL` privileges for `anon` and `authenticated`, and runs with its owner's rights, bypassing RLS. A simple view (one table, no aggregation) accepts `UPDATE/DELETE` from any visitor. **After every `create view`**: `revoke all ... from public, anon, authenticated`, then grant `select` only where needed.
+2. **`revoke ... from public` is not enough for functions.** Supabase grants `anon`/`authenticated` EXECUTE explicitly through default privileges. For server-only functions: `revoke execute ... from public, anon, authenticated`, then `grant ... to service_role`.
+3. **Functions used inside a view** must be executable by whoever queries the view (which is why `is_banned`/`is_account_deactivated` stay callable by visitors — the public directory depends on them).
+4. **An owner `FOR ALL` policy includes DELETE.** If the row carries admin-enforced state (e.g. a ban), deleting it removes that state. Use separate select/insert/update policies.
+5. **An UPDATE policy without a freeze trigger lets every column change** (keys, timestamps, statuses). Freeze sensitive columns with a `BEFORE UPDATE` trigger for app roles.
+6. **App-side validation does not protect the database**: any user can call REST directly with the anon key. Every important constraint (links, sizes, rate limits) must also be enforced in the database.
+7. **Server-action arguments are untyped at runtime**: validate them (`lib/validate.ts`) and never return a raw `error.message` to the user (`dbErrorMessage`).
+8. **Testing**: local `supabase` is unavailable, so we emulate Supabase's default privileges on a local Postgres and run attack tests plus functional tests before any migration.

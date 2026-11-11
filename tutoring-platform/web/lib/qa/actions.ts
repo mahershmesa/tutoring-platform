@@ -2,6 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import {
+  LIMITS,
+  asText,
+  asOptionalText,
+  isUuid,
+  dbErrorMessage,
+} from "@/lib/validate";
 
 export type QAState = {
   error?: string;
@@ -21,7 +28,10 @@ export async function sendQuestion(
   } = await supabase.auth.getUser();
   if (!user) return { error: "لازم تسجيل الدخول." };
 
-  const clean = text.trim();
+  if (!isUuid(subjectId)) return { error: "اختر المادة." };
+  const clean = asText(text, LIMITS.text);
+  if (clean === null)
+    return { error: `السؤال أطول من الحدّ المسموح (${LIMITS.text} حرف).` };
   if (!clean) return { error: "اكتب سؤالك." };
 
   const { data: sp } = await supabase
@@ -43,7 +53,7 @@ export async function sendQuestion(
     })
     .select("id")
     .single();
-  if (error) return { error: error.message };
+  if (error) return { error: dbErrorMessage(error, "تعذّر إرسال السؤال. حاول لاحقاً.") };
 
   // كم مدرّس تطابق (تريغر التوزيع أنشأ إشعاراتهم)
   const { count } = await supabase
@@ -67,16 +77,21 @@ export async function setQuestionAttachment(
   } = await supabase.auth.getUser();
   if (!user) return { error: "لازم تسجيل الدخول." };
 
+  const att = cleanAttachment(attachment);
+  // مرفق السؤال يجب أن يكون داخل مجلد السؤال نفسه
+  if (!isUuid(questionId) || !att || !att.path.startsWith(questionId + "/"))
+    return { error: "مرفق غير صالح." };
+
   const { error } = await supabase
     .from("questions")
     .update({
-      attachment_path: attachment.path,
-      attachment_mime: attachment.mime,
-      attachment_name: attachment.name,
+      attachment_path: att.path,
+      attachment_mime: att.mime,
+      attachment_name: att.name,
     })
     .eq("id", questionId)
     .eq("student_id", user.id);
-  if (error) return { error: error.message };
+  if (error) return { error: dbErrorMessage(error, "تعذّر حفظ المرفق.") };
 
   revalidatePath("/ask");
   revalidatePath("/inbox");
@@ -84,6 +99,18 @@ export async function setQuestionAttachment(
 }
 
 export type Attachment = { path: string; mime: string; name: string };
+
+// يتحقق من شكل المرفق القادم من العميل (نصوص ضمن الحدود، بلا تسلّق مسارات).
+function cleanAttachment(a: unknown): Attachment | null {
+  if (!a || typeof a !== "object") return null;
+  const o = a as Record<string, unknown>;
+  const path = asText(o.path, LIMITS.url);
+  const mime = asText(o.mime, LIMITS.mime);
+  const name = asText(o.name, LIMITS.fileName);
+  if (!path || mime === null || name === null) return null;
+  if (path.includes("..") || path.startsWith("/")) return null;
+  return { path, mime, name };
+}
 
 export async function sendMessage(
   questionId: string,
@@ -98,19 +125,30 @@ export async function sendMessage(
   } = await supabase.auth.getUser();
   if (!user) return { error: "لازم تسجيل الدخول." };
 
-  const clean = body.trim();
-  if (!clean && !attachment) return { error: "اكتب رسالة أو أرفق ملفاً." };
+  if (!isUuid(questionId) || !isUuid(recipientId))
+    return { error: "محادثة غير صالحة." };
+  const clean = asText(body, LIMITS.text);
+  if (clean === null)
+    return { error: `الرسالة أطول من الحدّ المسموح (${LIMITS.text} حرف).` };
+  let att: Attachment | null = null;
+  if (attachment) {
+    att = cleanAttachment(attachment);
+    // مرفق الرسالة يجب أن يكون داخل مجلد هذا السؤال
+    if (!att || !att.path.startsWith(questionId + "/"))
+      return { error: "مرفق غير صالح." };
+  }
+  if (!clean && !att) return { error: "اكتب رسالة أو أرفق ملفاً." };
 
   const { error } = await supabase.from("messages").insert({
     question_id: questionId,
     sender_id: user.id,
     recipient_id: recipientId,
     body: clean,
-    attachment_path: attachment?.path ?? null,
-    attachment_mime: attachment?.mime ?? null,
-    attachment_name: attachment?.name ?? null,
+    attachment_path: att?.path ?? null,
+    attachment_mime: att?.mime ?? null,
+    attachment_name: att?.name ?? null,
   });
-  if (error) return { error: error.message };
+  if (error) return { error: dbErrorMessage(error, "تعذّر إرسال الرسالة. حاول لاحقاً.") };
 
   revalidatePath("/ask");
   revalidatePath("/inbox");
@@ -126,6 +164,7 @@ export async function markNotificationRead(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "لازم تسجيل الدخول." };
+  if (!isUuid(notificationId)) return { error: "إشعار غير صالح." };
 
   const { error } = await supabase
     .from("notifications")
@@ -133,7 +172,7 @@ export async function markNotificationRead(
     .eq("id", notificationId)
     .eq("teacher_id", user.id) // فقط المدرّس المستهدَف (دفاع بالعمق فوق RLS)
     .eq("status", "sent"); // لا نتراجع عن answered
-  if (error) return { error: error.message };
+  if (error) return { error: dbErrorMessage(error, "تعذّر التحديث.") };
 
   revalidatePath("/inbox");
   return { ok: true };
@@ -151,19 +190,30 @@ export async function rateTeacher(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "لازم تسجيل الدخول." };
-  if (rating < 1 || rating > 5) return { error: "اختر تقييماً من ١ إلى ٥." };
+  if (!isUuid(teacherId)) return { error: "مدرّس غير صالح." };
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5)
+    return { error: "اختر تقييماً من ١ إلى ٥." };
+  const cleanComment = asOptionalText(comment, LIMITS.comment);
+  if (cleanComment === false)
+    return { error: `التعليق أطول من الحدّ المسموح (${LIMITS.comment} حرف).` };
 
   const { error } = await supabase.from("teacher_ratings").upsert(
     {
       student_id: user.id,
       teacher_id: teacherId,
       rating,
-      comment: comment.trim() || null,
+      comment: cleanComment,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "student_id,teacher_id" },
   );
-  if (error) return { error: error.message };
+  if (error)
+    return {
+      error: dbErrorMessage(
+        error,
+        "تعذّر حفظ التقييم — التقييم متاح بعد أن يردّ عليك المدرّس.",
+      ),
+    };
 
   revalidatePath("/ask");
   revalidatePath("/");
@@ -180,6 +230,8 @@ export async function confirmAnswer(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "لازم تسجيل الدخول." };
+  if (!isUuid(questionId) || !isUuid(teacherId))
+    return { error: "طلب غير صالح." };
 
   // دفاع بالعمق فوق RLS/الحارس: تأكّد أن المستخدم هو صاحب السؤال فعلاً.
   const { data: q } = await supabase
@@ -195,7 +247,7 @@ export async function confirmAnswer(
     .update({ status: "answered" })
     .eq("question_id", questionId)
     .eq("teacher_id", teacherId);
-  if (error) return { error: error.message };
+  if (error) return { error: dbErrorMessage(error, "تعذّر تأكيد الرد.") };
 
   revalidatePath("/ask");
   revalidatePath("/"); // الخريطة تعرض العدّاد

@@ -17,3 +17,22 @@ export function safeExternalUrl(raw: string | null | undefined): string | null {
     return null;
   }
 }
+
+/**
+ * رابط يوتيوب آمن للعرض: https ومن نطاقات يوتيوب فقط، وإلا null.
+ * دفاع بالعمق عند العرض — حتى لو وصلت قيمة غير صالحة للقاعدة بطريق آخر.
+ */
+export function safeYouTubeUrl(raw: string | null | undefined): string | null {
+  const safe = safeExternalUrl(raw);
+  if (!safe) return null;
+  try {
+    const u = new URL(safe);
+    if (u.protocol !== "https:") return null;
+    const h = u.hostname.toLowerCase().replace(/^www\./, "");
+    return h === "youtube.com" || h === "m.youtube.com" || h === "youtu.be"
+      ? u.href
+      : null;
+  } catch {
+    return null;
+  }
+}

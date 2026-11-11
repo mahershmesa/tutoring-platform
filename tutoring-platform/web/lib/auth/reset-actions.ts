@@ -1,8 +1,9 @@
 "use server";
 
 import { headers } from "next/headers";
+import { createHmac } from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { normalizePhone, isValidPhone } from "@/lib/auth/phone";
+import { normalizePhone, isValidPhone, phoneToEmail } from "@/lib/auth/phone";
 import { SECURITY_QUESTIONS } from "@/lib/auth/security-questions";
 
 type Admin = NonNullable<ReturnType<typeof createAdminClient>>;
@@ -22,15 +23,25 @@ async function withinRate(admin: Admin): Promise<boolean> {
   return data === true;
 }
 
-// سؤال وهمي ثابت مشتقّ من الرقم — يُعاد لغير المسجّل حتى لا يكشف الرد وجود الحساب.
+// سؤال وهمي ثابت لكل رقم — يُعاد لغير المسجّل حتى لا يكشف الرد وجود الحساب.
+// مشتقّ بـ HMAC بسرّ الخادم: لا يمكن لمهاجم حسابه مسبقاً (الخوارزمية علنية في
+// الريبو)، وإلا لقارن السؤال المُعاد بالوهمي المتوقّع وعرف أن الحساب موجود.
 function decoyQuestion(phone: string): string {
-  let h = 0;
-  for (let i = 0; i < phone.length; i++) h = (h * 31 + phone.charCodeAt(i)) | 0;
-  return SECURITY_QUESTIONS[Math.abs(h) % SECURITY_QUESTIONS.length];
+  const secret = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+  const digest = createHmac("sha256", secret).update("decoy:" + phone).digest();
+  return SECURITY_QUESTIONS[digest.readUInt32BE(0) % SECURITY_QUESTIONS.length];
 }
 
 // يبحث عن معرّف المستخدم برقم هاتفه (عبر مفتاح الخدمة — يتجاوز RLS).
+// المصدر الأساسي هوية المصادقة (البريد الصناعي المشتقّ من الرقم — لا يعدّله
+// المستخدم). هاتف البروفايل قابل للتعديل من صاحبه، فلا نعتمده إلا احتياطاً
+// للحسابات القديمة التي لا تملك هوية هاتفية.
 async function findUserId(admin: Admin, phone: string): Promise<string | null> {
+  const { data: byAuth, error: lookupErr } = await admin.rpc("reset_lookup_user", {
+    p_email: phoneToEmail(phone),
+  });
+  if (!lookupErr && typeof byAuth === "string" && byAuth) return byAuth;
+
   const { data: t } = await admin
     .from("teacher_profiles")
     .select("user_id")
@@ -52,6 +63,8 @@ export async function getResetQuestion(
   const admin = createAdminClient();
   if (!admin) return { error: "خدمة الاسترجاع غير مضبوطة. تواصل مع الإدارة." };
 
+  if (typeof phoneRaw !== "string" || phoneRaw.length > 40)
+    return { error: "رقم هاتف غير صحيح." };
   const phone = normalizePhone(phoneRaw);
   if (!isValidPhone(phone)) return { error: "رقم هاتف غير صحيح." };
   if (!(await withinRate(admin)))
@@ -79,9 +92,19 @@ export async function submitReset(
   const admin = createAdminClient();
   if (!admin) return { error: "خدمة الاسترجاع غير مضبوطة." };
 
+  if (
+    typeof phoneRaw !== "string" ||
+    typeof answer !== "string" ||
+    typeof newPassword !== "string" ||
+    phoneRaw.length > 40 ||
+    answer.length > 200
+  )
+    return { error: "بيانات غير صالحة." };
   const phone = normalizePhone(phoneRaw);
   if (!isValidPhone(phone)) return { error: "رقم هاتف غير صحيح." };
   if (newPassword.length < 8) return { error: "كلمة المرور ٨ أحرف على الأقل." };
+  if (newPassword.length > 72)
+    return { error: "كلمة المرور طويلة جداً (٧٢ حرفاً كحدّ أقصى)." };
   if (!(await withinRate(admin)))
     return { error: "محاولات كثيرة. انتظر قليلاً ثم حاول مجدداً." };
 

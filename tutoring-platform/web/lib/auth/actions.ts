@@ -28,44 +28,13 @@ export async function login(
   const password = String(formData.get("password") ?? "");
   if (!identifier || !password)
     return { error: "عبّي رقم الهاتف وكلمة المرور." };
+  if (identifier.length > 200 || password.length > 200)
+    return { error: "رقم الهاتف أو كلمة المرور غير صحيحة." };
 
   const email = toAuthEmail(identifier);
   if (!email) return { error: "رقم الهاتف غير صحيح." };
 
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) return { error: authError(error.message) };
-
-  redirect("/");
-}
-
-export async function signup(
-  _prev: AuthState,
-  formData: FormData,
-): Promise<AuthState> {
-  const supabase = createClient();
-  if (!supabase) return { error: "اتصال Supabase غير مضبوط." };
-
-  const phoneRaw = String(formData.get("phone") ?? "");
-  const password = String(formData.get("password") ?? "");
-  const fullName = String(formData.get("full_name") ?? "").trim();
-
-  // حاجز أمان: student أو teacher فقط — لا admin (والقاعدة تفرض نفس الشيء).
-  const role =
-    String(formData.get("role") ?? "student") === "teacher"
-      ? "teacher"
-      : "student";
-
-  if (!fullName) return { error: "اكتب اسمك." };
-
-  const phone = normalizePhone(phoneRaw);
-  if (!isValidPhone(phone)) return { error: "رقم هاتف غير صحيح (مثال: 07701234567)." };
-  if (password.length < 8) return { error: "كلمة المرور ٨ أحرف على الأقل." };
-
-  const { error } = await supabase.auth.signUp({
-    email: phoneToEmail(phone),
-    password,
-    options: { data: { role, full_name: fullName, phone } },
-  });
   if (error) return { error: authError(error.message) };
 
   redirect("/");

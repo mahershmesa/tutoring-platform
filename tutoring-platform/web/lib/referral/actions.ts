@@ -9,8 +9,9 @@ import { createClient } from "@/lib/supabase/server";
  * best-effort: أي خطأ لا يُفشل إنشاء الحساب.
  */
 export async function recordReferral(code: string): Promise<void> {
-  const c = (code ?? "").trim();
-  if (!c) return;
+  if (typeof code !== "string") return;
+  const c = code.trim();
+  if (!/^[A-Za-z0-9]{4,16}$/.test(c)) return;
   const supabase = createClient();
   if (!supabase) return;
   try {

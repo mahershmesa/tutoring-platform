@@ -225,6 +225,9 @@ create view public.quiz_questions_public
 with (security_invoker = off) as
   select id, quiz_id, prompt, options, sort_order
   from public.quiz_questions;
+-- مهم: العروض تأخذ صلاحيات Supabase الافتراضية الكاملة (ALL لـ anon/authenticated)
+-- وتتجاوز RLS، فالعرض البسيط يقبل UPDATE/DELETE من أي زائر. قراءة فقط:
+revoke all on public.quiz_questions_public from public, anon, authenticated;
 grant select on public.quiz_questions_public to authenticated;
 
 -- ---------- quiz_attempts ----------

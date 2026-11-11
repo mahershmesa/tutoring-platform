@@ -6,6 +6,8 @@ import { createPublicClient } from "@/lib/supabase/public";
 import ShareProfile from "@/components/teacher/ShareProfile";
 import ReportButton from "@/components/reports/ReportButton";
 import RecordProfileView from "@/components/teacher/RecordProfileView";
+import { safeYouTubeUrl } from "@/lib/safe-url";
+import { isUuid } from "@/lib/validate";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +39,7 @@ type Review = {
 // cache(): يمنع تكرار نفس الاستعلام داخل نفس الطلب — generateMetadata والصفحة
 // يستدعيانه، فيُنفَّذ مرّة واحدة بدل مرّتين (توفير استعلام لكل فتحة).
 const getProfile = cache(async (id: string): Promise<Profile | null> => {
+  if (!isUuid(id)) return null; // معرّف غير صالح → 404 بلا استعلام
   const sb = createPublicClient();
   if (!sb) return null;
   // الدليل العام يستثني غير المقبول/المحظور/المعطّل — فلا تُعرض ملفات غير صالحة
@@ -113,6 +116,8 @@ export default async function TeacherProfilePage({
   if (!p) notFound();
 
   const reviews = (await getReviews(id)).filter((r) => r.comment?.trim());
+  // الرابط يُعقَّم عند العرض أيضاً (لا نثق بما في القاعدة): يوتيوب https فقط
+  const youtubeUrl = safeYouTubeUrl(p.youtube_url);
   const gl = genderLabel(p.gender);
   const summary = `${gl ?? "مدرّس"} ${p.full_name}${
     p.subjects.length ? " — " + p.subjects.join("، ") : ""
@@ -192,9 +197,9 @@ export default async function TeacherProfilePage({
           أجاب على {p.answered_count} طالب
         </p>
 
-        {p.youtube_url && (
+        {youtubeUrl && (
           <a
-            href={p.youtube_url}
+            href={youtubeUrl}
             target="_blank"
             rel="noreferrer noopener"
             className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-red-700"

@@ -114,7 +114,16 @@ export default function AskFlow({
       // المرفق يُرفع بعد إنشاء السؤال (RLS يحتاج وجود السؤال)
       if (file && res.questionId) {
         const att = await uploadQuestionAttachment(res.questionId, file);
-        await setQuestionAttachment(res.questionId, att);
+        const attRes = await setQuestionAttachment(res.questionId, att);
+        if (attRes.error) {
+          // السؤال أُرسل لكن المرفق لم يُحفظ — نُعلم الطالب بدل الفشل الصامت
+          setText("");
+          setFile(null);
+          setFileKey((k) => k + 1);
+          setToast({ text: "أُرسل سؤالك، لكن تعذّر حفظ المرفق: " + attRes.error });
+          router.refresh();
+          return;
+        }
       }
       setText("");
       setFile(null);

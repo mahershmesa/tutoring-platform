@@ -62,24 +62,6 @@ export async function setTeacherVerification(
   return { ok: true };
 }
 
-export async function addSubject(name: string): Promise<ActionState> {
-  const supabase = await adminClient();
-  if (!supabase) return { error: "غير مصرّح." };
-
-  const clean = name.trim();
-  if (!clean) return { error: "اكتب اسم المادة." };
-
-  const { error } = await supabase.from("subjects").insert({ name: clean });
-  if (error) {
-    if (error.code === "23505") return { error: "هذه المادة موجودة مسبقاً." };
-    return { error: error.message };
-  }
-
-  revalidatePath("/admin/subjects");
-  revalidatePath("/");
-  return { ok: true };
-}
-
 export async function setSubjectActive(
   id: string,
   active: boolean,

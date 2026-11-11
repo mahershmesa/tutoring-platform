@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { isAllowedPushEndpoint } from "@/lib/push/allowlist";
+import { dbErrorMessage } from "@/lib/validate";
 
 export type PushState = { error?: string; ok?: boolean };
 
@@ -25,8 +26,17 @@ export async function savePushSubscription(
   const endpoint = sub?.endpoint;
   const p256dh = sub?.keys?.p256dh;
   const auth = sub?.keys?.auth;
-  if (!endpoint || !p256dh || !auth)
+  if (
+    typeof endpoint !== "string" ||
+    typeof p256dh !== "string" ||
+    typeof auth !== "string" ||
+    !endpoint ||
+    !p256dh ||
+    !auth
+  )
     return { error: "بيانات الاشتراك ناقصة." };
+  if (endpoint.length > 1000 || p256dh.length > 300 || auth.length > 300)
+    return { error: "بيانات الاشتراك غير صالحة." };
   if (!isAllowedPushEndpoint(endpoint))
     return { error: "عنوان اشتراك غير مدعوم." };
 
@@ -36,7 +46,7 @@ export async function savePushSubscription(
       { endpoint, user_id: user.id, p256dh, auth },
       { onConflict: "endpoint" },
     );
-  if (error) return { error: error.message };
+  if (error) return { error: dbErrorMessage(error, "تعذّر حفظ الاشتراك.") };
   return { ok: true };
 }
 
@@ -50,13 +60,14 @@ export async function removePushSubscription(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "لازم تسجيل الدخول." };
-  if (!endpoint) return { error: "لا يوجد اشتراك." };
+  if (typeof endpoint !== "string" || !endpoint)
+    return { error: "لا يوجد اشتراك." };
 
   const { error } = await supabase
     .from("push_subscriptions")
     .delete()
     .eq("endpoint", endpoint)
     .eq("user_id", user.id);
-  if (error) return { error: error.message };
+  if (error) return { error: dbErrorMessage(error, "تعذّر إلغاء الاشتراك.") };
   return { ok: true };
 }
