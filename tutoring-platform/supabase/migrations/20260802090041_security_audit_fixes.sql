@@ -22,6 +22,13 @@
 -- ======================================================================
 -- (1) العروض: قراءة فقط — لا كتابة عبر العرض إطلاقاً
 -- ======================================================================
+-- نعيد إنشاء العرض هنا (بدل افتراض وجوده): يعمل سواء كان موجوداً أو مفقوداً.
+drop view if exists public.quiz_questions_public;
+create view public.quiz_questions_public
+with (security_invoker = off) as
+  select id, quiz_id, prompt, options, sort_order
+  from public.quiz_questions;
+
 revoke all on public.quiz_questions_public from public, anon, authenticated;
 grant select on public.quiz_questions_public to authenticated;
 
