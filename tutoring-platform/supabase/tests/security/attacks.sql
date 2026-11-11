@@ -125,9 +125,13 @@ rollback;
 
 -- V13: grade_quiz بلا حدّ (تضخيم الجدول)
 begin; set local role authenticated; set local request.jwt.claim.sub = :'S1';
-select public.grade_quiz('d1000000-0000-0000-0000-000000000000','{}') from generate_series(1,150) \g /dev/null
-reset role;
-select pg_temp.r('V13 unlimited quiz attempts ('||count(*)||' rows from 150 calls)', count(*)>=150) from public.quiz_attempts;
+do $$ declare n int := 0; begin
+  for i in 1..150 loop
+    begin perform public.grade_quiz('d1000000-0000-0000-0000-000000000000', '{}'); n := n + 1;
+    exception when others then null; end;
+  end loop;
+  perform set_config('t.x', n::text, true); end $$;
+select pg_temp.r('V13 unlimited quiz attempts (' || current_setting('t.x') || ' of 150 accepted)', current_setting('t.x')::int >= 150);
 rollback;
 
 -- V14: إحالة بأثر رجعي من حساب قديم
@@ -143,7 +147,9 @@ rollback;
 
 -- V15: مدير ثانٍ يحظر المدير الأساسي
 begin; set local role authenticated; set local request.jwt.claim.sub = :'A1';
-insert into public.account_status(user_id,banned) values ('a0000000-0000-0000-0000-000000000000',true) on conflict (user_id) do update set banned=true;
+do $$ begin begin
+  insert into public.account_status(user_id,banned) values ('a0000000-0000-0000-0000-000000000000',true) on conflict (user_id) do update set banned=true;
+  exception when others then null; end; end $$;
 reset role;
 select pg_temp.r('V15 second-level admin can ban the primary admin', public.is_banned('a0000000-0000-0000-0000-000000000000'));
 rollback;
@@ -222,4 +228,32 @@ rollback;
 -- D5: زائر يقرأ هواتف المدرّسين مباشرةً من الجدول
 begin; set local role anon;
 select pg_temp.r('D5 anon reads teacher phones/emails directly from teacher_profiles', (select count(*) from public.teacher_profiles where phone is not null) > 0);
+rollback;
+
+-- ===== حالة المقروء (migration 42) =====
+begin; set local role authenticated; set local request.jwt.claim.sub = '72000000-0000-0000-0000-000000000000';
+select pg_temp.r('R1 outsider marks someone else''s thread as read', public.mark_thread_read('c1000000-0000-0000-0000-000000000000', '71000000-0000-0000-0000-000000000000') > 0);
+rollback;
+-- R2: إدراج مباشر في message_reads (المستلم نفسه يحاول بلا الدالة، والغريب كذلك)
+begin;
+select id as mid from public.messages where question_id = 'c1000000-0000-0000-0000-000000000000' limit 1 \gset
+select set_config('t.mid', :'mid', true) \g /dev/null
+set local role authenticated; set local request.jwt.claim.sub = '72000000-0000-0000-0000-000000000000';
+do $$ declare ok boolean := false; begin begin
+  insert into public.message_reads(message_id) values (current_setting('t.mid')::uuid); ok := true;
+  exception when others then ok := false; end; perform set_config('t.x', ok::text, true); end $$;
+select pg_temp.r('R2 direct insert into message_reads (bypassing the function)', current_setting('t.x')::boolean);
+rollback;
+begin; set local role authenticated; set local request.jwt.claim.sub = '51000000-0000-0000-0000-000000000000';
+select public.mark_all_messages_read() \g /dev/null
+set local request.jwt.claim.sub = '72000000-0000-0000-0000-000000000000';
+select pg_temp.r('R3 outsider reads other users'' read-state', (select count(*) from public.message_reads) > 0);
+rollback;
+begin; set local role anon;
+do $$ declare s text := 'denied'; begin begin s := public.my_notification_summary()::text; exception when insufficient_privilege then s := 'denied'; end; perform set_config('t.x', s, true); end $$;
+select pg_temp.r('R4 anon calls my_notification_summary', current_setting('t.x') <> 'denied');
+rollback;
+-- المرسِل لا يعلّم رسالته هو كمقروءة عن المستلم
+begin; set local role authenticated; set local request.jwt.claim.sub = '71000000-0000-0000-0000-000000000000';
+select pg_temp.r('R5 sender marks own sent message as read for the recipient', public.mark_thread_read('c1000000-0000-0000-0000-000000000000', '71000000-0000-0000-0000-000000000000') + public.mark_all_messages_read() > 0);
 rollback;

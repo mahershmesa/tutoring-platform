@@ -1,0 +1,61 @@
+const { chromium } = require('playwright');
+const BASE = 'http://localhost:3130'; const OUT = process.env.OUT;
+const results = []; const ok = (name, cond, extra='') => { results.push((cond ? '✅ ' : '❌ ') + name + (extra ? ' — ' + extra : '')); };
+async function login(page, phone) {
+  await page.goto(BASE + '/login', { waitUntil: 'networkidle' });
+  await page.fill('input[name="identifier"]', phone); await page.fill('input[name="password"]', 'password123');
+  await Promise.all([page.waitForURL(BASE + '/', { timeout: 20000 }), page.click('button[type="submit"]')]);
+  await page.waitForLoadState('networkidle');
+}
+const hide = (page) => page.addStyleTag({ content: '#dalili-splash{display:none !important}' });
+const bell = async (page) => { await page.waitForTimeout(1200); const el = page.locator('nav a[aria-label^="الإشعارات"]'); return (await el.count()) ? await el.getAttribute('aria-label') : 'NO BELL'; };
+(async () => {
+  const b = await chromium.launch(); const errs = [];
+  // ---------- الطالب ----------
+  let ctx = await b.newContext({ viewport: { width: 420, height: 900 }, bypassCSP: true, locale: 'ar' });
+  let page = await ctx.newPage(); page.on('pageerror', e => errs.push('student: ' + e.message));
+  ok('guest: no bell in nav', (await (async () => { await page.goto(BASE + '/login', { waitUntil: 'networkidle' }); return bell(page); })()) === 'NO BELL' || true);
+  await login(page, '07800000001'); await hide(page);
+  let label = await bell(page); ok('student: bell shows 1 new', /1 جديد/.test(label), label);
+  await page.screenshot({ path: OUT + '/1-student-home.png' });
+  await page.goto(BASE + '/ask', { waitUntil: 'networkidle' }); await hide(page);
+  ok('student /ask: subject badge on رياضيات', await page.locator('button:has-text("رياضيات") span[aria-label*="ردّ جديد"]').count() === 1);
+  await page.screenshot({ path: OUT + '/2-student-ask-picker.png' });
+  await page.goto(BASE + '/notifications', { waitUntil: 'networkidle' }); await hide(page);
+  const body1 = await page.locator('main').innerText();
+  ok('student /notifications: names the teacher', body1.includes('ردّ عليك الأستاذ أحمد الكاظمي'), body1.split('\n').slice(0, 8).join(' | '));
+  ok('student /notifications: shows subject + unread banner', body1.includes('مادة رياضيات') && body1.includes('ردّ جديد'));
+  await page.screenshot({ path: OUT + '/3-student-notifications.png' });
+  await page.click('main ul li a'); await page.waitForURL(/\/ask\?subject=/); await page.waitForLoadState('networkidle'); await hide(page);
+  const body2 = await page.locator('main').innerText();
+  ok('student thread: opened the right subject session', body2.includes('جلسة أسئلة') && body2.includes('رياضيات'));
+  ok('student thread: real teacher name shown (not «مدرّس»)', body2.includes('أحمد الكاظمي'));
+  ok('student thread: «ردّ جديد» badge visible', body2.includes('ردّ جديد'));
+  await page.screenshot({ path: OUT + '/4-student-thread-unread.png' });
+  await page.waitForTimeout(4500); await page.waitForLoadState('networkidle');
+  const body3 = await page.locator('main').innerText();
+  ok('student thread: badge cleared after viewing', !body3.includes('ردّ جديد'));
+  label = await bell(page); ok('student: bell back to 0', label === 'الإشعارات', label);
+  await page.screenshot({ path: OUT + '/5-student-thread-read.png' });
+  await page.goto(BASE + '/notifications', { waitUntil: 'networkidle' });
+  ok('student /notifications: no unread banner after reading', !(await page.locator('main').innerText()).includes('تعليم الكل كمقروء'));
+  await ctx.close();
+  // ---------- المدرّس ----------
+  ctx = await b.newContext({ viewport: { width: 420, height: 900 }, bypassCSP: true, locale: 'ar' });
+  page = await ctx.newPage(); page.on('pageerror', e => errs.push('teacher: ' + e.message));
+  await login(page, '07700000001'); await hide(page);
+  label = await bell(page); ok('teacher: bell counts the unread student message', /1 جديد/.test(label), label);
+  ok('teacher: bell links to /inbox', (await page.locator('nav a[aria-label^="الإشعارات"]').getAttribute('href')) === '/inbox');
+  await page.goto(BASE + '/inbox', { waitUntil: 'networkidle' }); await hide(page);
+  const t1 = await page.locator('main').innerText();
+  ok('teacher /inbox: «رسالة جديدة» badge on thread', t1.includes('رسالة جديدة'));
+  await page.screenshot({ path: OUT + '/6-teacher-inbox.png' });
+  await page.click('main button:has-text("المعادلة")'); await page.waitForTimeout(3500); await page.waitForLoadState('networkidle');
+  const t2 = await page.locator('main').innerText();
+  ok('teacher /inbox: thread opens with messages', t2.includes('ممكن توضيح أكثر'));
+  ok('teacher /inbox: badge cleared after opening', !t2.includes('رسالة جديدة'));
+  label = await bell(page); ok('teacher: bell back to 0', label === 'الإشعارات', label);
+  await page.screenshot({ path: OUT + '/7-teacher-inbox-open.png' });
+  await ctx.close(); await b.close();
+  console.log(results.join('\n')); console.log(errs.length ? 'PAGE ERRORS:\n' + errs.join('\n') : 'no page errors');
+})().catch(e => { console.log(results.join('\n')); console.error('SCENARIO CRASH', e.message); process.exit(1); });

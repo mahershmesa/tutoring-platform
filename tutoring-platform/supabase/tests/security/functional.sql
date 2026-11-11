@@ -109,5 +109,16 @@ select public.record_referral(:'code');
 set local request.jwt.claim.sub = :'S2';
 select pg_temp.ok('referral: new account counted for referrer', (select count(*) from public.referrals) = 1);
 reset role;
+-- حالة المقروء: رد المدرّس يظهر غير مقروء للطالب ثم يُعلَّم مقروءاً
+set local role authenticated; set local request.jwt.claim.sub = :'S1';
+select pg_temp.ok('read-state: student has 1 unread reply', (public.my_notification_summary() ->> 'unread_messages')::int = 1);
+select pg_temp.ok('read-state: student is not a teacher', (public.my_notification_summary() ->> 'is_teacher') = 'false');
+select pg_temp.ok('read-state: mark_thread_read marks 1', public.mark_thread_read('c1000000-0000-0000-0000-000000000000', :'T1') = 1);
+select pg_temp.ok('read-state: unread back to 0', (public.my_notification_summary() ->> 'unread_messages')::int = 0);
+select pg_temp.ok('read-state: second mark is a no-op', public.mark_thread_read('c1000000-0000-0000-0000-000000000000', :'T1') = 0);
+set local request.jwt.claim.sub = :'T1';
+select pg_temp.ok('read-state: teacher (sender) sees it was read', (select count(*) from public.message_reads) >= 1);
+select pg_temp.ok('read-state: teacher summary flags is_teacher', (public.my_notification_summary() ->> 'is_teacher') = 'true');
+reset role;
 select '🎉 ALL FUNCTIONAL CHECKS PASSED';
 rollback;

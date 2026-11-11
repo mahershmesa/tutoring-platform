@@ -97,7 +97,7 @@ async function buildTarget(
   if (payload.table === "messages") {
     const { data: m } = await admin
       .from("messages")
-      .select("recipient_id, body, question_id")
+      .select("recipient_id, sender_id, body, question_id")
       .eq("id", id)
       .maybeSingle();
     const recipientId = m?.recipient_id as string | undefined;
@@ -105,12 +105,32 @@ async function buildTarget(
     const body = ((m?.body as string | undefined) ?? "").trim();
     const snippet = body.length > 60 ? body.slice(0, 60) + "…" : body;
     const questionId = m?.question_id as string | undefined;
+    const senderId = m?.sender_id as string | undefined;
+
+    // هل المرسِل مدرّس؟ → الإشعار للطالب باسم الأستاذ، ويفتح صفحة إشعاراته.
+    // غير ذلك (طالب → مدرّس) → يفتح وارد المدرّس.
+    let title = "رسالة جديدة من طالب";
+    let url = "/inbox";
+    if (senderId) {
+      const { data: tp } = await admin
+        .from("teacher_profiles")
+        .select("full_name, gender")
+        .eq("user_id", senderId)
+        .maybeSingle();
+      if (tp) {
+        const honorific =
+          tp.gender === "female" ? "الأستاذة" : "الأستاذ";
+        const name = ((tp.full_name as string | null) ?? "").trim().slice(0, 60);
+        title = name ? `ردّ عليك ${honorific} ${name}` : "ردّ عليك مدرّس";
+        url = "/notifications";
+      }
+    }
     return {
       userId: recipientId,
       msg: {
-        title: "رسالة جديدة",
-        body: snippet || "وصلتك رسالة جديدة",
-        url: "/inbox",
+        title,
+        body: snippet || "أرسل لك مرفقاً",
+        url,
         tag: questionId ? `m-${questionId}` : undefined,
       },
     };

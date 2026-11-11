@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   sendQuestion,
   sendMessage,
+  markThreadRead,
   confirmAnswer,
   rateTeacher,
   setQuestionAttachment,
@@ -25,6 +26,7 @@ export type StudentTeacherThread = {
   teacherName: string;
   answeredCount: number;
   status: "sent" | "read" | "answered";
+  unread: number; // ردود المدرّس غير المقروءة
   messages: MessageVM[];
   myRating: number | null;
   myComment: string | null;
@@ -46,18 +48,40 @@ export default function AskFlow({
   profileComplete,
   subjects,
   questions,
+  initialSubjectId = null,
+  focusQuestionId = null,
 }: {
   profileComplete: boolean;
   subjects: SubjectVM[];
   questions: StudentQuestionVM[];
+  initialSubjectId?: string | null; // فتح مادة مباشرةً (رابط من الإشعارات)
+  focusQuestionId?: string | null; // التمرير إلى سؤال محدّد
 }) {
   const router = useRouter();
-  const [subjectId, setSubjectId] = useState<string | null>(null);
+  const [subjectId, setSubjectId] = useState<string | null>(
+    initialSubjectId && subjects.some((s) => s.id === initialSubjectId)
+      ? initialSubjectId
+      : null,
+  );
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [fileKey, setFileKey] = useState(0);
   const [sending, setSending] = useState(false);
   const [toast, setToast] = useState<Toast>(null);
+
+  // عند القدوم من إشعار: مرّر إلى السؤال المقصود مرّة واحدة
+  useEffect(() => {
+    if (!focusQuestionId || !subjectId) return;
+    const el = document.getElementById("q-" + focusQuestionId);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [focusQuestionId, subjectId]);
+
+  // عدد الردود غير المقروءة لكل مادة (شارة على زر المادة)
+  const unreadBySubject = new Map<string, number>();
+  questions.forEach((q) => {
+    const n = q.teachers.reduce((sum, t) => sum + t.unread, 0);
+    if (n > 0) unreadBySubject.set(q.subjectId, (unreadBySubject.get(q.subjectId) ?? 0) + n);
+  });
 
   if (!profileComplete) {
     return (
@@ -82,9 +106,17 @@ export default function AskFlow({
             <button
               key={s.id}
               onClick={() => setSubjectId(s.id)}
-              className="rounded-2xl border border-border bg-card px-4 py-6 text-center font-medium text-ink shadow-sm transition hover:border-teal hover:bg-teal-light"
+              className="relative rounded-2xl border border-border bg-card px-4 py-6 text-center font-medium text-ink shadow-sm transition hover:border-teal hover:bg-teal-light"
             >
               {s.name}
+              {(unreadBySubject.get(s.id) ?? 0) > 0 && (
+                <span
+                  className="absolute -left-1.5 -top-1.5 flex h-6 min-w-[1.5rem] items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white ring-2 ring-surface"
+                  aria-label={`${unreadBySubject.get(s.id)} ردّ جديد`}
+                >
+                  {unreadBySubject.get(s.id)! > 9 ? "9+" : unreadBySubject.get(s.id)}
+                </span>
+              )}
             </button>
           ))}
           {subjects.length === 0 && (
@@ -200,7 +232,8 @@ export default function AskFlow({
         {sessionQuestions.map((q) => (
           <div
             key={q.id}
-            className="rounded-2xl border border-border bg-card p-4 shadow-sm"
+            id={"q-" + q.id}
+            className="scroll-mt-4 rounded-2xl border border-border bg-card p-4 shadow-sm"
           >
             <p className="font-medium text-ink">{q.questionText}</p>
             {q.attachmentUrl && (
@@ -248,6 +281,7 @@ function TeacherThread({
   const [err, setErr] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const confirmedRef = useRef(false);
+  const readRef = useRef(false);
   const [stars, setStars] = useState<number>(t.myRating ?? 0);
   const [ratingComment, setRatingComment] = useState<string>(t.myComment ?? "");
   const [ratingBusy, setRatingBusy] = useState(false);
@@ -295,6 +329,31 @@ function TeacherThread({
     return () => observer.disconnect();
   }, [needsConfirm, questionId, t.teacherId, router]);
 
+  // تعليم ردود المدرّس كمقروءة فور ظهور المحادثة على الشاشة (مرّة واحدة).
+  useEffect(() => {
+    if (t.unread <= 0 || readRef.current) return;
+    const el = rootRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting) && !readRef.current) {
+          readRef.current = true;
+          observer.disconnect();
+          // مهلة قصيرة حتى يلمح الطالب شارة «جديد» قبل اختفائها
+          setTimeout(() => {
+            markThreadRead(questionId, t.teacherId).then(() => {
+              window.dispatchEvent(new Event("dalili:notif-refresh"));
+              router.refresh();
+            });
+          }, 1500);
+        }
+      },
+      { threshold: 0.4 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [t.unread, questionId, t.teacherId, router]);
+
   async function onReply(e: React.FormEvent) {
     e.preventDefault();
     if (!reply.trim() && !file) return;
@@ -322,7 +381,13 @@ function TeacherThread({
   }
 
   return (
-    <div ref={rootRef} className="rounded-xl border border-border bg-surface p-3">
+    <div
+      ref={rootRef}
+      className={
+        "rounded-xl border bg-surface p-3 " +
+        (t.unread > 0 ? "border-red-300 ring-1 ring-red-200" : "border-border")
+      }
+    >
       <div className="flex items-center justify-between">
         <span className="flex items-center gap-1.5 text-sm font-medium text-ink">
           <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
@@ -331,9 +396,16 @@ function TeacherThread({
             (أجاب على {t.answeredCount})
           </span>
         </span>
-        {t.status === "answered" && (
-          <span className="text-xs font-medium text-teal-dark">✓ مؤكّد</span>
-        )}
+        <span className="flex items-center gap-2">
+          {t.unread > 0 && (
+            <span className="rounded-full bg-red-500 px-2 py-0.5 text-[11px] font-bold text-white">
+              {t.unread === 1 ? "ردّ جديد" : `${t.unread} ردود جديدة`}
+            </span>
+          )}
+          {t.status === "answered" && (
+            <span className="text-xs font-medium text-teal-dark">✓ مؤكّد</span>
+          )}
+        </span>
       </div>
 
       {t.messages.length > 0 && (

@@ -26,7 +26,8 @@ export default async function AuthNav() {
   const supabase = createClient();
   let user = null;
   const roles = new Set<string>();
-  let unread = 0;
+  let unread = 0; // للمدرّس: أسئلة جديدة + رسائل طلاب غير مقروءة
+  let studentUnread = 0; // للطالب: ردود مدرّسين غير مقروءة
 
   if (supabase) {
     const { data } = await supabase.auth.getUser();
@@ -38,7 +39,16 @@ export default async function AuthNav() {
         .eq("user_id", user.id);
       (roleRows ?? []).forEach((r) => roles.add(r.role as string));
 
-      if (roles.has("teacher")) {
+      const { data: sum, error: sumErr } = await supabase.rpc(
+        "my_notification_summary",
+      );
+      if (!sumErr && sum) {
+        const s = sum as { unread_messages?: number; new_questions?: number };
+        const msgs = Number(s.unread_messages ?? 0);
+        if (roles.has("teacher")) unread = msgs + Number(s.new_questions ?? 0);
+        else studentUnread = msgs;
+      } else if (roles.has("teacher")) {
+        // احتياط (الدالة غير موجودة بعد): عدّ الأسئلة الجديدة كما كان
         const { count } = await supabase
           .from("notifications")
           .select("*", { count: "exact", head: true })
@@ -92,6 +102,11 @@ export default async function AuthNav() {
         <Link href="/ask" className={primaryPill}>
           <AskIcon />
           اسأل
+          {studentUnread > 0 && (
+            <span className="absolute -left-1.5 -top-1.5 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-bold text-white ring-2 ring-surface">
+              {studentUnread > 9 ? "9+" : studentUnread}
+            </span>
+          )}
         </Link>
       )}
       {admin && (

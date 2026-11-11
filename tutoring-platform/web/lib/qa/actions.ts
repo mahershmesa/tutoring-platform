@@ -253,3 +253,42 @@ export async function confirmAnswer(
   revalidatePath("/"); // الخريطة تعرض العدّاد
   return { ok: true };
 }
+
+// يعلّم رسائل محادثة (ما أرسله الطرف الآخر لي في هذا السؤال) كمقروءة.
+// القاعدة تضمن أن المستلم فقط يعلّم رسائله (دالة SECURITY DEFINER).
+export async function markThreadRead(
+  questionId: string,
+  otherId: string,
+): Promise<QAState> {
+  const supabase = createClient();
+  if (!supabase) return { error: "اتصال Supabase غير مضبوط." };
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "لازم تسجيل الدخول." };
+  if (!isUuid(questionId) || !isUuid(otherId)) return { error: "طلب غير صالح." };
+
+  const { error } = await supabase.rpc("mark_thread_read", {
+    p_question: questionId,
+    p_other: otherId,
+  });
+  if (error) return { error: dbErrorMessage(error, "تعذّر التحديث.") };
+  return { ok: true };
+}
+
+// يعلّم كل الرسائل الواردة كمقروءة (زر «تعليم الكل كمقروء»).
+export async function markAllRead(): Promise<QAState> {
+  const supabase = createClient();
+  if (!supabase) return { error: "اتصال Supabase غير مضبوط." };
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "لازم تسجيل الدخول." };
+
+  const { error } = await supabase.rpc("mark_all_messages_read");
+  if (error) return { error: dbErrorMessage(error, "تعذّر التحديث.") };
+  revalidatePath("/notifications");
+  revalidatePath("/ask");
+  revalidatePath("/inbox");
+  return { ok: true };
+}

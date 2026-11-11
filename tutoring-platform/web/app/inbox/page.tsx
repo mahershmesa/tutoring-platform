@@ -26,11 +26,16 @@ type MsgRow = {
   id: string;
   question_id: string;
   sender_id: string;
+  recipient_id: string | null;
   body: string;
   attachment_path: string | null;
   attachment_mime: string | null;
   attachment_name: string | null;
+  message_reads: { read_at: string } | { read_at: string }[] | null;
 };
+
+const isRead = (m: MsgRow) =>
+  Array.isArray(m.message_reads) ? m.message_reads.length > 0 : Boolean(m.message_reads);
 
 export default async function InboxPage() {
   const supabase = createClient();
@@ -53,14 +58,28 @@ export default async function InboxPage() {
   const qIds = notifs.map((n) => n.question_id);
   let msgs: MsgRow[] = [];
   if (qIds.length > 0) {
-    const { data: mData } = await supabase
+    const { data: mData, error: mErr } = await supabase
       .from("messages")
       .select(
-        "id, question_id, sender_id, body, attachment_path, attachment_mime, attachment_name",
+        "id, question_id, sender_id, recipient_id, body, attachment_path, attachment_mime, attachment_name, message_reads(read_at)",
       )
       .in("question_id", qIds)
       .order("sent_at", { ascending: true });
     msgs = (mData as unknown as MsgRow[]) ?? [];
+    if (mErr) {
+      // احتياط: جدول حالة المقروء غير موجود بعد → بدون شارات، والمحادثات تبقى ظاهرة
+      const { data: plain } = await supabase
+        .from("messages")
+        .select(
+          "id, question_id, sender_id, recipient_id, body, attachment_path, attachment_mime, attachment_name",
+        )
+        .in("question_id", qIds)
+        .order("sent_at", { ascending: true });
+      msgs = ((plain ?? []) as unknown as MsgRow[]).map((r) => ({
+        ...r,
+        message_reads: { read_at: "" },
+      }));
+    }
   }
 
   // روابط موقّتة للمرفقات (RLS يقيّد الوصول لهذا المدرّس والطالب فقط)
@@ -108,6 +127,14 @@ export default async function InboxPage() {
         : null,
       attachmentMime: q?.attachment_mime ?? null,
       attachmentName: q?.attachment_name ?? null,
+      // رسائل الطالب التي لم يقرأها المدرّس بعد
+      unread: msgs.filter(
+        (m) =>
+          m.question_id === n.question_id &&
+          m.sender_id === studentId &&
+          m.recipient_id === user.id &&
+          !isRead(m),
+      ).length,
       // RLS يعيد فقط رسائل هذا المدرّس (مرسِلاً أو مستقبِلاً)
       messages: msgs
         .filter(

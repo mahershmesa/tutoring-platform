@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { sendMessage, markNotificationRead } from "@/lib/qa/actions";
+import {
+  sendMessage,
+  markNotificationRead,
+  markThreadRead,
+} from "@/lib/qa/actions";
 import { uploadMessageAttachment } from "@/lib/supabase/upload";
 import MessageBubble, { type MessageVM } from "@/components/qa/MessageBubble";
 import AttachmentView from "@/components/qa/AttachmentView";
@@ -19,6 +23,7 @@ export type InboxItem = {
   attachmentUrl: string | null;
   attachmentMime: string | null;
   attachmentName: string | null;
+  unread: number; // رسائل الطالب غير المقروءة
   messages: MessageVM[];
 };
 
@@ -65,8 +70,14 @@ function InboxThread({ it, teacherId }: { it: InboxItem; teacherId: string }) {
   async function toggle() {
     const next = !open;
     setOpen(next);
-    if (next && it.status === "sent") {
-      await markNotificationRead(it.notificationId);
+    if (!next) return;
+    // عند الفتح: السؤال يصبح «مقروءاً»، ورسائل الطالب الجديدة تُعلَّم مقروءة
+    const jobs: Promise<unknown>[] = [];
+    if (it.status === "sent") jobs.push(markNotificationRead(it.notificationId));
+    if (it.unread > 0) jobs.push(markThreadRead(it.questionId, it.studentId));
+    if (jobs.length > 0) {
+      await Promise.all(jobs);
+      window.dispatchEvent(new Event("dalili:notif-refresh"));
       router.refresh();
     }
   }
@@ -109,8 +120,15 @@ function InboxThread({ it, teacherId }: { it: InboxItem; teacherId: string }) {
             · {it.govName}
           </p>
         </div>
-        <span className={"shrink-0 rounded-full px-2.5 py-1 text-xs font-medium " + badge.cls}>
-          {badge.text}
+        <span className="flex shrink-0 flex-col items-end gap-1">
+          <span className={"rounded-full px-2.5 py-1 text-xs font-medium " + badge.cls}>
+            {badge.text}
+          </span>
+          {it.unread > 0 && (
+            <span className="rounded-full bg-red-500 px-2 py-0.5 text-[11px] font-bold text-white">
+              {it.unread === 1 ? "رسالة جديدة" : `${it.unread} رسائل جديدة`}
+            </span>
+          )}
         </span>
       </button>
 

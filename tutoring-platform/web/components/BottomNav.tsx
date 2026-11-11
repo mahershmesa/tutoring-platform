@@ -1,8 +1,69 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import ThemeToggle from "@/components/ThemeToggle";
+import { createClient } from "@/lib/supabase/client";
+
+// حدث داخلي: تُطلقه الواجهات بعد تعليم رسائل كمقروءة لتحديث الشارة فوراً.
+export const NOTIF_REFRESH_EVENT = "dalili:notif-refresh";
+
+type Summary = { count: number; isTeacher: boolean };
+
+// يجلب ملخّص الإشعارات للمستخدم المسجّل (null للزائر). استعلام خفيف واحد.
+function useNotificationSummary(pathname: string): Summary | null {
+  const [summary, setSummary] = useState<Summary | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const supabase = createClient();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession(); // محلي — بلا طلب شبكة للزائر
+        if (!session) {
+          if (!cancelled) setSummary(null);
+          return;
+        }
+        const { data, error } = await supabase.rpc("my_notification_summary");
+        if (cancelled || error || !data) return;
+        const d = data as {
+          unread_messages?: number;
+          new_questions?: number;
+          is_teacher?: boolean;
+        };
+        const isTeacher = d.is_teacher === true;
+        setSummary({
+          isTeacher,
+          count:
+            Number(d.unread_messages ?? 0) +
+            (isTeacher ? Number(d.new_questions ?? 0) : 0),
+        });
+      } catch {
+        /* الشارة ميزة إضافية — لا تعطّل الشريط عند أي خطأ */
+      }
+    }
+
+    load();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") load();
+    };
+    const timer = setInterval(onVisible, 90_000);
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener(NOTIF_REFRESH_EVENT, load);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener(NOTIF_REFRESH_EVENT, load);
+    };
+  }, [pathname]);
+
+  return summary;
+}
 
 // مسارات نُخفي فيها الشريط (الدخول/التسجيل/الاسترجاع + لوحة الإدارة لها تنقّلها).
 const HIDDEN = ["/login", "/register", "/reset", "/admin"];
@@ -51,7 +112,13 @@ const items: Item[] = [
 
 export default function BottomNav() {
   const pathname = usePathname() || "/";
+  const summary = useNotificationSummary(pathname);
   if (HIDDEN.some((h) => pathname === h || pathname.startsWith(h + "/"))) return null;
+
+  // الجرس للمسجّلين فقط: المدرّس → الوارد، الطالب → صفحة الإشعارات
+  const bellHref = summary?.isTeacher ? "/inbox" : "/notifications";
+  const bellActive =
+    pathname.startsWith("/notifications") || pathname.startsWith("/inbox");
 
   return (
     <>
@@ -78,6 +145,33 @@ export default function BottomNav() {
               </Link>
             );
           })}
+          {summary && (
+            <Link
+              href={bellHref}
+              aria-label={
+                summary.count > 0
+                  ? `الإشعارات — ${summary.count} جديد`
+                  : "الإشعارات"
+              }
+              className={
+                "flex flex-1 flex-col items-center gap-1 py-2 text-xs font-medium transition " +
+                (bellActive ? "text-teal-dark" : "text-ink-soft hover:text-teal-dark")
+              }
+            >
+              <span className="relative">
+                <svg viewBox="0 0 24 24" fill="none" className={iconCls} stroke="currentColor" strokeWidth="1.8">
+                  <path d="M6 9a6 6 0 1 1 12 0c0 5 2 6 2 6H4s2-1 2-6Z" strokeLinejoin="round" />
+                  <path d="M10 19a2 2 0 0 0 4 0" strokeLinecap="round" />
+                </svg>
+                {summary.count > 0 && (
+                  <span className="absolute -right-2 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white ring-2 ring-card">
+                    {summary.count > 9 ? "9+" : summary.count}
+                  </span>
+                )}
+              </span>
+              <span>الإشعارات</span>
+            </Link>
+          )}
           <ThemeToggle className="flex flex-1 flex-col items-center gap-1 py-2 text-xs font-medium text-ink-soft transition hover:text-teal-dark" />
         </div>
       </nav>

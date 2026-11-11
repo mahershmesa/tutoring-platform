@@ -149,6 +149,7 @@ A unified table serving three cases:
 | 32 | `announcements` | announcements system + role functions + push trigger |
 | 33–40 | (see files) | push allowlist, featured, views, YouTube, admin tiers, referrals, teacher study content |
 | 41 | `security_audit_fixes` | full security-audit fixes (see section 8) |
+| 42 | `message_read_state` | message read/unread state (`message_reads` table, mark-read functions, badge summary) |
 
 ---
 
