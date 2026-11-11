@@ -19,6 +19,7 @@
 -- =============================================================
 
 
+-- @section: 41/01 views read-only
 -- ======================================================================
 -- (1) العروض: قراءة فقط — لا كتابة عبر العرض إطلاقاً
 -- ======================================================================
@@ -36,16 +37,77 @@ revoke insert, update, delete, truncate, references, trigger
   on public.teacher_directory from public, anon, authenticated;
 
 
+-- @section: 41/02 server-only reset functions
 -- ======================================================================
 -- (2) دوال الخادم فقط: اسحب التنفيذ من أدوار العميل صراحةً
 -- ======================================================================
-revoke execute on function public.check_security_answer(uuid, text)
-  from public, anon, authenticated;
-revoke execute on function public.check_reset_rate_limit(text, integer, interval)
-  from public, anon, authenticated;
-grant execute on function public.check_security_answer(uuid, text) to service_role;
-grant execute on function public.check_reset_rate_limit(text, integer, interval) to service_role;
+-- نضمن وجود حدّ المعدّل للاسترجاع (قد يكون مفقوداً في قواعد قديمة): نحذف أي
+-- نسخة بتوقيع مختلف (تفادياً لتعارض overload في PostgREST) ثم ننشئ القياسية.
+create table if not exists public.reset_attempts (
+  id         bigserial primary key,
+  ip         text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists idx_reset_attempts_ip_time
+  on public.reset_attempts (ip, created_at);
+alter table public.reset_attempts enable row level security;
 
+do $$
+declare
+  f record;
+begin
+  for f in
+    select p.oid::regprocedure as sig
+    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public' and p.proname = 'check_reset_rate_limit'
+      and p.oid::regprocedure::text <> 'check_reset_rate_limit(text,integer,interval)'
+  loop
+    execute format('drop function %s', f.sig);
+  end loop;
+end $$;
+
+create or replace function public.check_reset_rate_limit(
+  p_ip     text,
+  p_max    integer  default 10,
+  p_window interval default interval '1 hour'
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  c integer;
+begin
+  delete from public.reset_attempts where created_at < now() - interval '1 day';
+  select count(*) into c
+    from public.reset_attempts
+    where ip = p_ip and created_at > now() - p_window;
+  if c >= p_max then
+    return false;
+  end if;
+  insert into public.reset_attempts (ip) values (p_ip);
+  return true;
+end;
+$$;
+
+-- السحب بالاسم لا بالتوقيع (يغطي أي نسخة موجودة من الدالتين)
+do $$
+declare
+  f record;
+begin
+  for f in
+    select p.oid::regprocedure as sig
+    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public'
+      and p.proname in ('check_security_answer', 'check_reset_rate_limit')
+  loop
+    execute format('revoke execute on function %s from public, anon, authenticated', f.sig);
+    execute format('grant execute on function %s to service_role', f.sig);
+  end loop;
+end $$;
+
+-- @section: 41/02b revoke auth-only RPCs from anon
 -- دوال تخصّ المسجّلين فقط: لا حاجة للزائر بها (تقليل سطح الهجوم)
 revoke execute on function public.grade_quiz(uuid, jsonb) from public, anon;
 revoke execute on function public.my_referral_code() from public, anon;
@@ -54,6 +116,7 @@ revoke execute on function public.set_security_credential(text, text) from publi
 grant execute on function public.set_security_credential(text, text) to authenticated;
 
 
+-- @section: 41/10 reset lookup by auth identity
 -- ======================================================================
 -- (10) استرجاع كلمة المرور: البحث بهوية المصادقة (غير قابلة للتعديل من
 --      المستخدم) بدل هاتف البروفايل. للخادم (service_role) فقط.
@@ -71,6 +134,7 @@ revoke execute on function public.reset_lookup_user(text) from public, anon, aut
 grant execute on function public.reset_lookup_user(text) to service_role;
 
 
+-- @section: 41/03 account status + ban protection
 -- ======================================================================
 -- (3) + (8) حالة الحساب: لا حذف من صاحب الصفّ، وحماية حقل الحظر
 -- ======================================================================
@@ -134,6 +198,7 @@ create trigger trg_protect_account_ban
   for each row execute function public.protect_account_ban();
 
 
+-- @section: 41/04 notifications answered terminal
 -- ======================================================================
 -- (4) الإشعارات: حالة answered نهائية (لا رجوع ثم تأكيد متكرر)
 -- ======================================================================
@@ -159,6 +224,7 @@ end;
 $$;
 
 
+-- @section: 41/05 teacher link sanitizer
 -- ======================================================================
 -- (5) روابط بروفايل المدرّس: تعقيم على مستوى القاعدة
 --     (الإدخال المباشر عبر REST يتجاوز تحقّق التطبيق)
@@ -216,6 +282,7 @@ where (youtube_url is not null and not public.is_valid_youtube_url(youtube_url))
    or public.is_dangerous_url(photo_url);
 
 
+-- @section: 41/06a content: approval helpers + policies
 -- ======================================================================
 -- (6) محتوى المدرّس: الاعتماد يشمل «غير محظور/غير معطّل»، والتعديل يخضع
 --     لنفس شرط المادة، ومحتوى المحظور يختفي عن الطلاب
@@ -293,6 +360,7 @@ create policy "owner or admin updates quizzes"
     or (auth.uid() = teacher_id and public.is_approved_teacher_of(subject_id))
   );
 
+-- @section: 41/06b content: daily limit
 -- ختم الزمن + حدّ يومي لمحتوى المدرّس (منع الإغراق)
 create or replace function public.limit_teacher_content()
 returns trigger
@@ -328,6 +396,7 @@ create trigger trg_limit_quizzes
   before insert on public.quizzes
   for each row execute function public.limit_teacher_content();
 
+-- @section: 41/06c content: quiz question validation
 -- أسئلة الاختبار: الخيارات نصوص فعلاً، وبأطوال معقولة، وعدد محدود لكل اختبار
 create or replace function public.validate_quiz_question()
 returns trigger
@@ -368,6 +437,7 @@ create trigger trg_validate_quiz_question
   for each row execute function public.validate_quiz_question();
 
 
+-- @section: 41/07 question keys frozen
 -- ======================================================================
 -- (7) الأسئلة: مفاتيح التوجيه وزمن الإنشاء ثابتة بعد الإدراج
 -- ======================================================================
@@ -395,6 +465,7 @@ create trigger trg_guard_question_keys
   for each row execute function public.guard_question_keys();
 
 
+-- @section: 41/09a rate: profile views
 -- ======================================================================
 -- (9) حدود المعدّل
 -- ======================================================================
@@ -439,6 +510,7 @@ begin
 end;
 $$;
 
+-- @section: 41/09b rate: quiz attempts
 -- تصحيح الاختبار: حدّ ٦٠ محاولة/ساعة للطالب
 create or replace function public.grade_quiz(p_quiz_id uuid, p_answers jsonb)
 returns jsonb
@@ -499,6 +571,7 @@ $$;
 revoke execute on function public.grade_quiz(uuid, jsonb) from public, anon;
 grant execute on function public.grade_quiz(uuid, jsonb) to authenticated;
 
+-- @section: 41/09c referrals new accounts only
 -- الإحالات: تُحتسب للحسابات الجديدة فقط (خلال يومين من التسجيل)
 create or replace function public.record_referral(p_code text)
 returns void
@@ -526,6 +599,7 @@ $$;
 revoke execute on function public.record_referral(text) from public, anon;
 grant execute on function public.record_referral(text) to authenticated;
 
+-- @section: 41/09d reports guard
 -- البلاغات: الحالة والزمن من الخادم + حدّ ٢٠ بلاغاً/يوم للمُبلِّغ
 create or replace function public.guard_report_insert()
 returns trigger
@@ -561,6 +635,7 @@ create trigger trg_guard_report_insert
   before insert on public.reports
   for each row execute function public.guard_report_insert();
 
+-- @section: 41/09e push device cap
 -- اشتراكات الدفع: سقف ١٠ أجهزة للمستخدم (يمنع تضخيم الإرسال)
 create or replace function public.guard_push_endpoint()
 returns trigger
@@ -586,6 +661,7 @@ end;
 $$;
 
 
+-- @section: 41/09f size limits
 -- ======================================================================
 -- (9) حدود الحجم: قيود NOT VALID (تُفرض على كل إدراج/تعديل جديد دون
 --     فحص الصفوف القديمة، فلا يفشل التطبيق على بيانات موجودة)

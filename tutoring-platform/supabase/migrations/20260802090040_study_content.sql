@@ -10,6 +10,7 @@
 --   * التصحيح عبر دالة SECURITY DEFINER (grade_quiz) تحسب الدرجة في القاعدة.
 -- =============================================================
 
+-- @section: 40/00 approval helpers
 -- -------------------------------------------------------------
 -- مساعد: هل المستخدم الحالي مدرّس معتمد ويُدرّس هذه المادة؟
 -- -------------------------------------------------------------
@@ -47,6 +48,7 @@ $$;
 revoke all on function public.is_approved_teacher() from public;
 grant execute on function public.is_approved_teacher() to authenticated;
 
+-- @section: 40/01 exam papers
 -- =============================================================
 -- 1) بنك الوزاريات/النماذج (ملفات)
 -- =============================================================
@@ -98,6 +100,7 @@ create policy "owner or admin deletes exam papers"
   to authenticated
   using (auth.uid() = teacher_id or public.is_admin());
 
+-- @section: 40/02 quizzes + questions view + grading
 -- =============================================================
 -- 2) اختبر نفسك — اختبارات MCQ تفاعلية
 -- =============================================================
@@ -300,6 +303,7 @@ $$;
 revoke all on function public.grade_quiz(uuid, jsonb) from public;
 grant execute on function public.grade_quiz(uuid, jsonb) to authenticated;
 
+-- @section: 40/03 storage bucket
 -- =============================================================
 -- 3) تخزين ملفات الوزاريات — bucket عام للقراءة، مقيّد الكتابة
 --    المسار: <teacher_id>/<file>
